@@ -1,0 +1,28 @@
+# Backend (Maven)
+backend/target/
+!backend/.mvn/wrapper/maven-wrapper.jar
+
+# Frontend (Angular)
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Secretos locales (nunca subir llaves reales)
+.env
+*.env.local
+
+# Logs de fallos de la JVM
+replay_pid*.log
+hs_err_pid*.log
+
+# Configuracion local de Claude Code
+.claude/
