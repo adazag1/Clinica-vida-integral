@@ -1,0 +1,25 @@
+@if (auth.usuario(); as u) {
+  <section class="tarjeta bienvenida">
+    <div>
+      <p class="bienvenida__fecha">{{ fecha }}</p>
+      <h2>{{ saludo }}, {{ u.nombreCompleto }}</h2>
+      <p class="bienvenida__rol">
+        <span class="chip chip--primario"><span class="icono">badge</span>{{ u.rolDescripcion }}</span>
+      </p>
+    </div>
+    <span class="icono bienvenida__icono">health_and_safety</span>
+  </section>
+
+  <h3 class="seccion">Sus módulos</h3>
+  <div class="modulos">
+    @for (m of modulos(); track m.ruta) {
+      <a class="tarjeta modulo" [routerLink]="'/' + m.ruta">
+        <span class="modulo__icono"><span class="icono">{{ m.icono }}</span></span>
+        <strong>{{ m.titulo }}</strong>
+        <span class="modulo__desc">{{ m.descripcion }}</span>
+      </a>
+    } @empty {
+      <p class="vacio">Su rol aún no tiene módulos habilitados.</p>
+    }
+  </div>
+}

@@ -1,0 +1,17 @@
+# Base de datos para desarrollo local. Misma versión mayor que Azure Database for PostgreSQL.
+# Uso: docker compose up -d
+services:
+  postgres:
+    image: postgres:17
+    container_name: clinica-postgres
+    environment:
+      POSTGRES_DB: clinica
+      POSTGRES_USER: clinica
+      POSTGRES_PASSWORD: clinica_local
+    ports:
+      - "5432:5432"
+    volumes:
+      - clinica-data:/var/lib/postgresql/data
+
+volumes:
+  clinica-data:

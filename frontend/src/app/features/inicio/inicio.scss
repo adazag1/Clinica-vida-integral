@@ -1,0 +1,96 @@
+.bienvenida {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 28px 32px;
+  background: linear-gradient(120deg, #fff 55%, var(--c-azul-suave));
+
+  h2 {
+    font-size: 24px;
+    margin: 4px 0 12px;
+  }
+}
+
+.bienvenida__fecha {
+  margin: 0;
+  color: var(--c-texto-2);
+
+  &::first-letter {
+    text-transform: uppercase;
+  }
+}
+
+.bienvenida__rol {
+  margin: 0;
+
+  .icono {
+    font-size: 16px;
+  }
+}
+
+.bienvenida__icono {
+  font-size: 72px;
+  color: var(--c-azul);
+  opacity: 0.25;
+}
+
+.seccion {
+  font-size: 17px;
+  margin: 28px 0 14px;
+}
+
+.modulos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 16px;
+}
+
+.modulo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: inherit;
+  transition: transform 0.15s, border-color 0.15s;
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: var(--c-azul);
+  }
+
+  strong {
+    font-size: 15px;
+    margin-top: 6px;
+  }
+
+}
+
+.modulo__desc {
+  color: var(--c-texto-2);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.modulo__icono {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: var(--c-azul-suave);
+  color: var(--c-azul);
+}
+
+.vacio {
+  color: var(--c-texto-2);
+}
+
+@media (max-width: 640px) {
+  .bienvenida {
+    padding: 20px;
+  }
+
+  .bienvenida__icono {
+    display: none;
+  }
+}

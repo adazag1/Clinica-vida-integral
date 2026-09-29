@@ -1,0 +1,16 @@
+# Perfil de desarrollo local: PostgreSQL en Docker (ver docker-compose.yml en la raíz).
+# SOLO datos de prueba ficticios. Nunca usar datos reales de pacientes (Ley 1581 de 2012).
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/clinica
+    username: clinica
+    password: clinica_local
+
+app:
+  jwt:
+    # Llave exclusiva para desarrollo local. En Azure se toma de Key Vault (JWT_SECRET).
+    secret: bG9jYWwtZGV2LXNvbG8tcGFyYS1wcnVlYmFzLWNsaW5pY2EtdmlkYS1pbnRlZ3JhbA==
+  seed:
+    # Crea un usuario de prueba por cada rol al arrancar (usuario = nombre del rol en minúscula).
+    habilitado: true
+    password-prueba: Clinica2026*

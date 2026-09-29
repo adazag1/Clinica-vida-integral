@@ -1,0 +1,140 @@
+<div class="login">
+  <section class="login__marca">
+    <div class="logo">
+      <span class="logo__cruz"><span class="icono">add</span></span>
+      <div>
+        <div class="logo__nombre">Clínica Vida Integral</div>
+        <div class="logo__lema">Sistema de Salud</div>
+      </div>
+    </div>
+
+    <div class="login__texto">
+      <h1>Toda la información de sus pacientes, en un solo lugar.</h1>
+      <p>
+        Historia clínica digital, laboratorio, imágenes diagnósticas y agendamiento integrados,
+        con apoyo diagnóstico asistido por inteligencia artificial.
+      </p>
+    </div>
+
+    <svg class="login__ilustracion" viewBox="0 0 420 260" role="img" aria-label="Ilustración de atención médica">
+      <ellipse cx="210" cy="150" rx="190" ry="105" fill="#e9f1fd" />
+      <g fill="#c9dcf8">
+        @for (fila of [0, 1, 2]; track fila) {
+          @for (col of [0, 1, 2, 3]; track col) {
+            <circle [attr.cx]="40 + col * 12" [attr.cy]="40 + fila * 12" r="2.5" />
+          }
+        }
+      </g>
+      <circle cx="360" cy="62" r="28" fill="#fff" />
+      <path d="M360 48v28M346 62h28" stroke="#9ec3f5" stroke-width="7" stroke-linecap="round" />
+      <path d="M150 70c-18-22-54-12-54 16 0 26 54 56 54 56s54-30 54-56c0-28-36-38-54-16z" fill="#5b9bf0" />
+      <path d="M104 96h24l8-14 12 28 10-18h40" fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round" stroke-linecap="round" />
+      <rect x="238" y="58" width="78" height="100" rx="10" fill="#fff" stroke="#c9dcf8" stroke-width="3" />
+      <rect x="262" y="50" width="30" height="14" rx="5" fill="#5b9bf0" />
+      @for (y of [86, 110, 134]; track y) {
+        <path [attr.d]="'M252 ' + y + 'l6 6 10-12'" fill="none" stroke="#5b9bf0" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+        <rect x="276" [attr.y]="y - 3" width="28" height="6" rx="3" fill="#d6e4f7" />
+      }
+      <rect x="70" y="222" width="280" height="8" rx="4" fill="#cfdaea" />
+      <rect x="160" y="182" width="96" height="42" rx="6" fill="#d9e2ee" />
+      <circle cx="208" cy="203" r="5" fill="#fff" />
+      <path d="M60 222c0-28 10-46 24-54M84 222c0-22-6-38-18-48" stroke="#2bb3ae" stroke-width="7" fill="none" stroke-linecap="round" />
+    </svg>
+
+    <ul class="login__beneficios">
+      <li>
+        <span class="icono">group</span>
+        <strong>Historia unificada</strong>
+        <span>Antecedentes, resultados e imágenes en una sola vista.</span>
+      </li>
+      <li>
+        <span class="icono">science</span>
+        <strong>Resultados en tiempo real</strong>
+        <span>Alertas inmediatas ante valores críticos.</span>
+      </li>
+      <li>
+        <span class="icono">image</span>
+        <strong>Apoyo diagnóstico</strong>
+        <span>Sugerencias de IA que el médico siempre valida.</span>
+      </li>
+    </ul>
+
+    <p class="login__legal">
+      <span class="icono">verified_user</span>
+      Información protegida conforme a la Ley 1581 de 2012. Todos los accesos quedan registrados.
+    </p>
+  </section>
+
+  <section class="login__panel">
+    <form class="tarjeta login__form" [formGroup]="form" (ngSubmit)="enviar()" novalidate>
+      <div class="login__candado"><span class="icono">lock</span></div>
+      <h2>Bienvenido</h2>
+      <p class="login__sub">Inicia sesión para acceder al sistema</p>
+
+      @if (error()) {
+        <div class="alerta alerta--error" role="alert">
+          <span class="icono">error</span>
+          <span>{{ error() }}</span>
+        </div>
+      }
+
+      <div class="campo" [class.campo--error]="invalido('usuario')">
+        <label for="usuario">Correo electrónico o usuario</label>
+        <div class="campo__control">
+          <span class="icono">person</span>
+          <input id="usuario" formControlName="usuario" autocomplete="username" placeholder="usuario@clinicavidaintegral.co" />
+        </div>
+        @if (invalido('usuario')) {
+          <span class="campo__error">Ingrese su usuario o correo</span>
+        }
+      </div>
+
+      <div class="campo" [class.campo--error]="invalido('password')">
+        <label for="password">Contraseña</label>
+        <div class="campo__control">
+          <span class="icono">lock</span>
+          <input
+            id="password"
+            formControlName="password"
+            autocomplete="current-password"
+            placeholder="••••••••••"
+            [type]="verPassword() ? 'text' : 'password'"
+          />
+          <button
+            type="button"
+            class="login__ojo"
+            (click)="verPassword.set(!verPassword())"
+            [attr.aria-label]="verPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+          >
+            <span class="icono">{{ verPassword() ? 'visibility_off' : 'visibility' }}</span>
+          </button>
+        </div>
+        @if (invalido('password')) {
+          <span class="campo__error">Ingrese su contraseña</span>
+        }
+      </div>
+
+      <div class="login__opciones">
+        <label class="check">
+          <input type="checkbox" formControlName="recordarme" />
+          Recordarme
+        </label>
+        <button type="button" class="enlace" (click)="olvidoPassword()">¿Olvidaste tu contraseña?</button>
+      </div>
+
+      <button type="submit" class="btn btn--primario btn--bloque" [disabled]="cargando()">
+        <span class="icono">login</span>
+        {{ cargando() ? 'Ingresando…' : 'Iniciar sesión' }}
+      </button>
+
+      <button type="button" class="btn btn--secundario btn--bloque login__solicitar" (click)="solicitarAcceso()">
+        <span class="icono">person_add</span>
+        Solicitar acceso
+      </button>
+
+      @if (aviso()) {
+        <p class="login__aviso"><span class="icono">info</span>{{ aviso() }}</p>
+      }
+    </form>
+  </section>
+</div>

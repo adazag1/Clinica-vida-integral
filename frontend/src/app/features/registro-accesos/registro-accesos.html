@@ -1,0 +1,54 @@
+<section class="tarjeta">
+  <div class="cabecera">
+    <div class="tarjeta__titulo"><span class="icono">history</span>Registro de accesos y acciones</div>
+    <form class="filtro" (ngSubmit)="cargar(0)">
+      <input [(ngModel)]="filtroUsuario" name="usuario" placeholder="Filtrar por usuario" aria-label="Filtrar por usuario" />
+      <button type="submit" class="btn btn--secundario">Buscar</button>
+    </form>
+  </div>
+
+  @if (error()) {
+    <div class="alerta alerta--error"><span class="icono">error</span>{{ error() }}</div>
+  }
+
+  <div class="tabla-contenedor">
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th>Fecha y hora</th>
+          <th>Usuario</th>
+          <th>Acción</th>
+          <th>Recurso</th>
+          <th>Resultado</th>
+          <th>IP</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (r of registros(); track r.id) {
+          <tr>
+            <td class="nowrap">{{ r.fecha | date: 'dd/MM/yyyy hh:mm:ss a' }}</td>
+            <td>{{ r.usuario ?? '—' }}</td>
+            <td><span class="chip" [class]="claseAccion(r.accion)">{{ r.accion }}</span></td>
+            <td class="recurso">{{ r.recurso === 'evento' ? (r.detalle ?? '—') : r.recurso }}</td>
+            <td>{{ r.estadoHttp ?? '—' }}</td>
+            <td class="nowrap">{{ r.ip ?? '—' }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="6" class="vacio">{{ cargando() ? 'Cargando…' : 'Sin registros' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (totalPaginas() > 1) {
+    <div class="paginacion">
+      <button class="btn btn--secundario" [disabled]="pagina() === 0" (click)="cargar(pagina() - 1)">Anterior</button>
+      <span>Página {{ pagina() + 1 }} de {{ totalPaginas() }}</span>
+      <button class="btn btn--secundario" [disabled]="pagina() + 1 >= totalPaginas()" (click)="cargar(pagina() + 1)">
+        Siguiente
+      </button>
+    </div>
+  }
+</section>

@@ -1,0 +1,65 @@
+<div class="shell" [class.shell--menu-abierto]="menuAbierto()">
+  <aside class="lateral">
+    <a class="lateral__logo" routerLink="/inicio" (click)="cerrarMenu()">
+      <span class="lateral__cruz"><span class="icono">add</span></span>
+      <span>
+        <span class="lateral__nombre">Clínica Vida Integral</span>
+        <span class="lateral__lema">Sistema de Salud</span>
+      </span>
+    </a>
+
+    <nav class="lateral__nav" aria-label="Módulos">
+      @for (m of modulos(); track m.ruta) {
+        <a
+          class="lateral__item"
+          [routerLink]="'/' + m.ruta"
+          routerLinkActive="lateral__item--activo"
+          (click)="cerrarMenu()"
+        >
+          <span class="icono">{{ m.icono }}</span>
+          {{ m.titulo }}
+        </a>
+      }
+    </nav>
+
+    @if (auth.usuario(); as u) {
+      <div class="lateral__usuario">
+        <div class="perfil">
+          <span class="perfil__avatar">{{ iniciales() }}</span>
+          <span class="perfil__datos">
+            <strong>{{ u.nombreCompleto }}</strong>
+            <span>{{ u.cargo ?? u.rolDescripcion }}</span>
+          </span>
+        </div>
+        <button type="button" class="lateral__salir" (click)="auth.logout()">
+          <span class="icono">logout</span>
+          Cerrar sesión
+        </button>
+      </div>
+    }
+  </aside>
+
+  <div class="velo" (click)="cerrarMenu()"></div>
+
+  <div class="principal">
+    <header class="superior">
+      <button type="button" class="superior__menu" aria-label="Abrir menú" (click)="menuAbierto.set(!menuAbierto())">
+        <span class="icono">menu</span>
+      </button>
+      <h1 class="superior__titulo">{{ titulo() }}</h1>
+
+      <label class="buscador">
+        <span class="icono">search</span>
+        <input type="search" placeholder="Buscar paciente…" aria-label="Buscar paciente" />
+      </label>
+
+      <button type="button" class="superior__campana" aria-label="Notificaciones">
+        <span class="icono">notifications</span>
+      </button>
+    </header>
+
+    <main class="contenido">
+      <router-outlet />
+    </main>
+  </div>
+</div>

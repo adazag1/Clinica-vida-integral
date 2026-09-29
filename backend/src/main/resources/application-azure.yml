@@ -1,0 +1,16 @@
+# Perfil de producción en Azure App Service.
+# Todos los valores llegan como variables de entorno / referencias a Azure Key Vault.
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+app:
+  seed:
+    habilitado: ${SEED_HABILITADO:false}
+    password-prueba: ${SEED_PASSWORD:}
+
+springdoc:
+  swagger-ui:
+    enabled: ${SWAGGER_HABILITADO:true}

@@ -1,0 +1,300 @@
+$ancho-lateral: 260px;
+
+.shell {
+  display: grid;
+  grid-template-columns: $ancho-lateral 1fr;
+  min-height: 100vh;
+}
+
+/* ---------- Menú lateral ---------- */
+
+.lateral {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 16px 16px;
+  background: #f8fafd;
+  border-right: 1px solid var(--c-borde);
+  overflow-y: auto;
+}
+
+.lateral__logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 8px 24px;
+  color: inherit;
+}
+
+.lateral__cruz {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #1fb5d6, #1a5fd0);
+  color: #fff;
+
+  .icono {
+    font-size: 32px;
+    font-weight: 700;
+  }
+}
+
+.lateral__nombre {
+  display: block;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--c-azul);
+  line-height: 1.2;
+}
+
+.lateral__lema {
+  font-size: 13px;
+  color: var(--c-texto-2);
+}
+
+.lateral__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lateral__item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  color: var(--c-texto);
+  font-size: 15px;
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+
+  .icono {
+    color: var(--c-texto);
+  }
+
+  &:hover {
+    background: #eef3fa;
+  }
+}
+
+.lateral__item--activo {
+  background: var(--c-azul-suave);
+  color: var(--c-azul);
+
+  .icono {
+    color: var(--c-azul);
+    font-variation-settings: 'FILL' 1;
+  }
+}
+
+.lateral__usuario {
+  margin-top: auto;
+  padding-top: 16px;
+}
+
+.perfil {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--c-borde);
+  border-radius: 12px 12px 0 0;
+  background: var(--c-superficie);
+}
+
+.perfil__avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--c-primario);
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.perfil__datos {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  strong {
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  span {
+    font-size: 12px;
+    color: var(--c-texto-2);
+  }
+}
+
+.lateral__salir {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--c-borde);
+  border-top: 0;
+  border-radius: 0 0 12px 12px;
+  background: var(--c-superficie);
+  font: inherit;
+  color: var(--c-texto);
+  cursor: pointer;
+
+  &:hover {
+    color: var(--c-critico);
+  }
+}
+
+/* ---------- Barra superior ---------- */
+
+.principal {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.superior {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 28px;
+  background: rgba(245, 248, 252, 0.92);
+  backdrop-filter: blur(6px);
+}
+
+.superior__menu,
+.superior__campana {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--c-texto);
+  cursor: pointer;
+
+  &:hover {
+    background: #e8eef6;
+  }
+}
+
+.superior__menu {
+  display: none;
+}
+
+.superior__titulo {
+  font-size: 26px;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.buscador {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(380px, 40vw);
+  height: 46px;
+  padding: 0 14px;
+  border: 1px solid #d5deea;
+  border-radius: 12px;
+  background: var(--c-superficie);
+
+  .icono {
+    color: var(--c-texto-2);
+  }
+
+  input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    font: inherit;
+    font-size: 15px;
+    background: transparent;
+  }
+
+  &:focus-within {
+    border-color: var(--c-azul);
+  }
+}
+
+.contenido {
+  padding: 8px 28px 32px;
+}
+
+.velo {
+  display: none;
+}
+
+/* ---------- Responsive: el menú se vuelve un cajón ---------- */
+
+@media (max-width: 1024px) {
+  .shell {
+    grid-template-columns: 1fr;
+  }
+
+  .lateral {
+    position: fixed;
+    z-index: 20;
+    left: 0;
+    width: $ancho-lateral;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+  }
+
+  .shell--menu-abierto .lateral {
+    transform: none;
+  }
+
+  .shell--menu-abierto .velo {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 15;
+    background: rgba(16, 42, 76, 0.35);
+  }
+
+  .superior__menu {
+    display: grid;
+  }
+}
+
+@media (max-width: 640px) {
+  .superior {
+    padding: 12px 16px;
+    flex-wrap: wrap;
+  }
+
+  .superior__titulo {
+    font-size: 20px;
+  }
+
+  .buscador {
+    order: 3;
+    width: 100%;
+  }
+
+  .contenido {
+    padding: 8px 16px 24px;
+  }
+}

@@ -1,0 +1,46 @@
+.cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.filtro {
+  display: flex;
+  gap: 8px;
+
+  input {
+    height: 44px;
+    padding: 0 12px;
+    border: 1px solid var(--c-borde);
+    border-radius: var(--radio-sm);
+    font: inherit;
+    min-width: 0;
+  }
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.recurso {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12px;
+  min-width: 180px;
+  overflow-wrap: break-word;
+}
+
+.vacio {
+  text-align: center;
+  color: var(--c-texto-2);
+  padding: 32px;
+}
+
+.paginacion {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
