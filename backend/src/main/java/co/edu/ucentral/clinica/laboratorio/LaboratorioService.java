@@ -163,6 +163,10 @@ public class LaboratorioService {
                     paciente.getNombreCompleto() + ": " + elegidos.stream().map(ExamenLab::getNombre)
                             .collect(Collectors.joining(", ")), "/laboratorio/ordenes/" + orden.getId());
         }
+        // RFENF-010: enfermería toma la muestra
+        notificaciones.paraRol(Rol.ENFERMERIA, (r.prioridad() == PrioridadLab.URGENTE ? "Toma de muestra urgente " : "Toma de muestra ")
+                        + numero, paciente.getNombreCompleto() + ": " + elegidos.stream().map(e -> e.getNombre() + " (" + e.getTipoMuestra() + ")")
+                        .collect(Collectors.joining(", ")), "/enfermeria/pacientes/" + paciente.getId());
         return armar(orden);
     }
 
@@ -219,6 +223,9 @@ public class LaboratorioService {
         notificaciones.paraUsuario(o.getMedico(), "Muestra rechazada " + o.getNumero(),
                 pacienteService.buscarEntidad(o.getPacienteId()).getNombreCompleto() + ": " + r.motivo().getDescripcion()
                         + ". Se requiere una nueva muestra.", "/laboratorio/ordenes/" + o.getId());
+        notificaciones.paraRol(Rol.ENFERMERIA, "Repetir toma de muestra " + o.getNumero(),
+                pacienteService.buscarEntidad(o.getPacienteId()).getNombreCompleto() + ": muestra rechazada por "
+                        + r.motivo().getDescripcion().toLowerCase(), "/enfermeria/pacientes/" + o.getPacienteId());
         return armar(o);
     }
 

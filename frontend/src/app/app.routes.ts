@@ -7,7 +7,6 @@ import { EnConstruccion } from './features/en-construccion/en-construccion';
 
 /** Fase en la que se construye cada módulo pendiente (ver README). */
 const FASES: Record<string, string> = {
-  enfermeria: 'Fase 6',
   imagenes: 'Fase 7',
   patologia: 'Fase 7',
   documentos: 'Fase 7',
@@ -150,6 +149,24 @@ export const routes: Routes = [
             canActivate: [rolGuard],
             data: { roles: ['LABORATORIO', ...HISTORIA] },
             loadComponent: () => import('./features/laboratorio/orden/orden-laboratorio').then((m) => m.OrdenLaboratorio),
+          },
+        ],
+      },
+      {
+        path: 'enfermeria',
+        children: [
+          {
+            path: '',
+            canActivate: [rolGuard],
+            data: { roles: ['ENFERMERIA', 'MEDICO'] },
+            loadComponent: () => import('./features/enfermeria/censo/censo-enfermeria').then((m) => m.CensoEnfermeria),
+          },
+          {
+            path: 'pacientes/:id',
+            canActivate: [rolGuard],
+            data: { roles: HISTORIA },
+            loadComponent: () =>
+              import('./features/enfermeria/paciente/paciente-enfermeria').then((m) => m.PacienteEnfermeria),
           },
         ],
       },

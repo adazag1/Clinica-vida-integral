@@ -9,6 +9,7 @@ import { Subject, debounceTime, distinctUntilChanged, switchMap, catchError, of 
 import { codigoError, mensajeError } from '../../../core/api/api';
 import { AuthService } from '../../../core/auth/auth.service';
 import { OrdenesConsulta } from '../componentes/ordenes-consulta';
+import { OrdenesEnfermeria } from '../componentes/ordenes-enfermeria';
 import { ResumenClinicoPanel } from '../componentes/resumen-clinico';
 import { TarjetasSignos } from '../componentes/tarjetas-signos';
 import {
@@ -28,7 +29,7 @@ import { ConsultaService } from '../consulta.service';
 /** Pantalla "Consulta Medicina General" del mockup (RFMT-002, 003, 007, 010, 011). */
 @Component({
   selector: 'app-consulta-pagina',
-  imports: [DatePipe, FormsModule, RouterLink, ResumenClinicoPanel, TarjetasSignos, OrdenesConsulta],
+  imports: [DatePipe, FormsModule, RouterLink, ResumenClinicoPanel, TarjetasSignos, OrdenesConsulta, OrdenesEnfermeria],
   templateUrl: './consulta-pagina.html',
   styleUrl: './consulta-pagina.scss',
 })
@@ -50,6 +51,8 @@ export class ConsultaPagina implements OnInit {
   protected notas = { motivoConsulta: '', enfermedadActual: '', examenFisico: '', plan: '' };
   protected readonly diagnosticos = signal<DiagnosticoConsulta[]>([]);
 
+  /** Las órdenes a enfermería siguen vivas después de firmar (paciente en observación u hospitalizado). */
+  protected readonly esMedico = computed(() => this.auth.usuario()?.rol === 'MEDICO');
   protected readonly editable = computed(() => {
     const c = this.consulta();
     return !!c && c.estado === 'EN_CURSO' && c.medico.toLowerCase() === this.auth.usuario()?.username.toLowerCase();

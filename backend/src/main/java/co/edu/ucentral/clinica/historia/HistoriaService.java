@@ -27,6 +27,7 @@ import co.edu.ucentral.clinica.pacientes.Normalizador;
 import co.edu.ucentral.clinica.pacientes.Paciente;
 import co.edu.ucentral.clinica.pacientes.PacienteService;
 import co.edu.ucentral.clinica.pacientes.dto.PacienteResumenDto;
+import co.edu.ucentral.clinica.seguridad.Rol;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -161,10 +162,15 @@ public class HistoriaService {
             String detalle = paciente.getNombreCompleto() + ": " + alertas.stream()
                     .filter(a -> a.nivel() == EvaluadorSignos.Nivel.CRITICO)
                     .map(EvaluadorSignos.Alerta::mensaje).reduce((a, b) -> a + "; " + b).orElse("");
-            consultas.findByPacienteIdOrderByInicioDesc(pacienteId).stream()
-                    .filter(c -> c.getEstado() == Consulta.Estado.EN_CURSO && !c.getMedico().equalsIgnoreCase(usuario))
+            List<Consulta> abiertas = consultas.findByPacienteIdOrderByInicioDesc(pacienteId).stream()
+                    .filter(c -> c.getEstado() == Consulta.Estado.EN_CURSO).toList();
+            abiertas.stream().filter(c -> !c.getMedico().equalsIgnoreCase(usuario))
                     .forEach(c -> notificaciones.paraUsuario(c.getMedico(), "Signos vitales críticos", detalle,
                             "/consulta/" + c.getId()));
+            if (abiertas.isEmpty()) {
+                // Sin consulta abierta (p. ej. paciente en observación): avisa a los médicos de turno
+                notificaciones.paraRol(Rol.MEDICO, "Signos vitales críticos", detalle, "/enfermeria/pacientes/" + pacienteId);
+            }
         }
         return SignosDto.de(s, alertas);
     }
@@ -246,14 +252,14 @@ public class HistoriaService {
     }
 
     /** Triage del episodio abierto del paciente, si lo tiene. */
-    Optional<Triage> triageActual(Long pacienteId) {
+    public Optional<Triage> triageActual(Long pacienteId) {
         return episodios.abiertosDePaciente(pacienteId,
                         EnumSet.of(EstadoEpisodio.EN_ADMISION, EstadoEpisodio.EN_ESPERA_CONSULTA, EstadoEpisodio.EN_ATENCION))
                 .stream().map(Episodio::getId).findFirst().flatMap(triages::findByEpisodioId);
     }
 
     /** La toma más reciente entre la de triage y las registradas en consulta o enfermería. */
-    SignosDto ultimosSignos(Long pacienteId, Optional<Triage> triage) {
+    public SignosDto ultimosSignos(Long pacienteId, Optional<Triage> triage) {
         Optional<RegistroSignos> registro = signos.findFirstByPacienteIdOrderByFechaDesc(pacienteId);
         if (triage.isPresent() && (registro.isEmpty() || triage.get().getModificadoEn().isAfter(registro.get().getFecha()))) {
             Triage t = triage.get();

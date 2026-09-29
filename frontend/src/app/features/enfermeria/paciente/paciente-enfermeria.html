@@ -1,0 +1,268 @@
+<a class="volver" routerLink="/enfermeria"><span class="icono">arrow_back</span> Pacientes a cargo</a>
+
+@if (datos(); as d) {
+  <section class="tarjeta encabezado">
+    <span class="avatar"><span class="icono">person</span></span>
+    <div class="encabezado__datos">
+      <h2>{{ d.paciente.nombreCompleto }}</h2>
+      <p>{{ d.paciente.tipoDocumento }} {{ d.paciente.numeroDocumento }}
+        {{ d.paciente.edad !== null ? ' · ' + d.paciente.edad + ' años' : '' }}
+        {{ d.paciente.sexo ? ' · ' + (d.paciente.sexo === 'FEMENINO' ? 'Femenino' : d.paciente.sexo === 'MASCULINO' ? 'Masculino' : 'Otro') : '' }}</p>
+    </div>
+    <a class="enlace" [routerLink]="['/historia', d.paciente.id]"><span class="icono">folder_open</span>Historia clínica</a>
+  </section>
+
+  @if (d.alergias.length) {
+    <div class="alerta alerta--error alergias" role="alert">
+      <span class="icono">warning</span><strong>Alergias:</strong> {{ d.alergias.join(' · ') }}
+    </div>
+  }
+}
+
+<nav class="pestanas" role="tablist">
+  @for (p of pestanas; track p.valor) {
+    <button type="button" role="tab" [attr.aria-selected]="pestana() === p.valor" [class.activa]="pestana() === p.valor"
+      (click)="elegir(p.valor)"><span class="icono">{{ p.icono }}</span>{{ p.etiqueta }}</button>
+  }
+</nav>
+
+@if (error()) {
+  <div class="alerta alerta--error" role="alert"><span class="icono">error</span>{{ error() }}</div>
+}
+@if (aviso()) {
+  <div class="alerta alerta--exito" role="status"><span class="icono">check_circle</span>{{ aviso() }}</div>
+}
+
+@switch (pestana()) {
+  @case ('ordenes') {
+    @if (datos(); as d) {
+      <div class="barra">
+        <p class="ayuda"><span class="icono">info</span>Horario de las últimas y próximas 12 horas. Toque una hora pendiente para registrarla.</p>
+        @if (inactivas()) {
+          <label class="check"><input type="checkbox" [ngModel]="verInactivas()" (ngModelChange)="verInactivas.set($event)" />
+            Ver vencidas y suspendidas ({{ inactivas() }})</label>
+        }
+      </div>
+      @for (o of ordenesVisibles(); track o.id) {
+        <article class="tarjeta orden" [class.orden--inactiva]="o.situacion !== 'ACTIVA'" [class.orden--riesgo]="o.altoRiesgo">
+          <div class="orden__cabecera">
+            <span class="icono orden__icono">{{ icono(o) }}</span>
+            <div class="orden__titulo">
+              <strong>{{ o.descripcion }}</strong>
+              <small>{{ o.tipoDescripcion }} · {{ o.medicoNombre }} · hasta {{ o.fin | date: 'dd/MM h:mm a' }}</small>
+            </div>
+            @if (o.altoRiesgo) { <span class="chip chip--critico"><span class="icono">gpp_maybe</span>Alto riesgo</span> }
+            @if (o.situacion === 'SUSPENDIDA') {
+              <span class="chip chip--critico">Suspendida</span>
+            } @else if (o.situacion === 'VENCIDA') {
+              <span class="chip">Vencida</span>
+            }
+          </div>
+          @if (o.indicaciones) { <p class="orden__nota"><span class="icono">info</span>{{ o.indicaciones }}</p> }
+          @if (o.situacion === 'SUSPENDIDA') {
+            <p class="orden__nota orden__nota--mal"><span class="icono">block</span>Suspendida por {{ o.suspendidaPor }}
+              el {{ o.suspendidaEn | date: 'dd/MM h:mm a' }}: {{ o.motivoSuspension }}. No se debe ejecutar.</p>
+          }
+          @if (o.tipo !== 'DIETA') {
+            <div class="horarios">
+              @for (h of o.horarios; track h.programadaPara) {
+                @if (ejecutable(o, h)) {
+                  <button type="button" class="hora" [class]="'hora chip ' + claseHorario(h.estado)" (click)="abrir(o, h)"
+                    [title]="detalle(h)">
+                    <strong>{{ h.programadaPara | date: 'h:mm a' }}</strong>{{ etiquetaHorario[h.estado] }}
+                  </button>
+                } @else {
+                  <span class="hora" [class]="'hora chip ' + claseHorario(h.estado)" [title]="detalle(h)">
+                    <strong>{{ h.programadaPara | date: 'h:mm a' }}</strong>{{ etiquetaHorario[h.estado] }}
+                    @if (h.ejecucion?.dobleValidacionPor) { <span class="icono" aria-label="Doble verificación">verified_user</span> }
+                  </span>
+                }
+              } @empty {
+                <span class="vacio">Sin horas programadas en las últimas y próximas 12 horas.</span>
+              }
+            </div>
+          } @else {
+            <p class="orden__nota"><span class="icono">restaurant</span>Dieta continua mientras la orden esté vigente.</p>
+          }
+        </article>
+      } @empty {
+        <p class="vacio tarjeta">No hay órdenes {{ verInactivas() ? '' : 'activas ' }}para este paciente.</p>
+      }
+
+      <section class="tarjeta">
+        <div class="tarjeta__titulo"><span class="icono">science</span>Exámenes de laboratorio</div>
+        @for (x of d.examenes; track x.id) {
+          <a class="examen" [routerLink]="['/laboratorio/ordenes', x.id]">
+            <span><strong>{{ x.examenes.join(', ') }}</strong><small>{{ x.numero }} · {{ x.prioridadDescripcion }} · {{ x.ordenadaEn | date: 'dd/MM h:mm a' }}</small></span>
+            <span class="chip" [class]="'chip ' + claseLab($any(x.estado))">{{ x.estadoDescripcion }}</span>
+            @if (x.estado === 'ORDENADA') { <span class="chip chip--alerta"><span class="icono">water_drop</span>Tomar muestra</span> }
+            @if (x.estado === 'RECHAZADA') { <span class="chip chip--critico">Repetir toma</span> }
+          </a>
+        } @empty {
+          <p class="vacio">Sin exámenes en curso.</p>
+        }
+      </section>
+    }
+  }
+
+  @case ('signos') {
+    <section class="tarjeta">
+      <div class="tarjeta__titulo"><span class="icono">ecg_heart</span>Últimos signos vitales</div>
+      <app-tarjetas-signos [signos]="ultimaToma()" />
+      @if (alertasSignos().length) {
+        <ul class="alertas-signos">@for (a of alertasSignos(); track $index) { <li>{{ a }}</li> }</ul>
+      }
+    </section>
+    @if (esEnfermeria()) {
+      <section class="tarjeta">
+        <div class="tarjeta__titulo"><span class="icono">add_chart</span>Registrar toma</div>
+        <div class="form-signos">
+          <label>PA sistólica<input type="number" [(ngModel)]="nuevosSignos.presionSistolica" /></label>
+          <label>PA diastólica<input type="number" [(ngModel)]="nuevosSignos.presionDiastolica" /></label>
+          <label>FC (lpm)<input type="number" [(ngModel)]="nuevosSignos.frecuenciaCardiaca" /></label>
+          <label>FR (rpm)<input type="number" [(ngModel)]="nuevosSignos.frecuenciaRespiratoria" /></label>
+          <label>Temp. (°C)<input type="number" step="0.1" [(ngModel)]="nuevosSignos.temperatura" /></label>
+          <label>SpO₂ (%)<input type="number" [(ngModel)]="nuevosSignos.saturacionOxigeno" /></label>
+          <label>Peso (kg)<input type="number" step="0.1" [(ngModel)]="nuevosSignos.peso" /></label>
+          <label>Talla (cm)<input type="number" [(ngModel)]="nuevosSignos.talla" /></label>
+        </div>
+        @if (errorSignos()) { <p class="campo__error">{{ errorSignos() }}</p> }
+        <div class="acciones"><button type="button" class="btn btn--primario btn--pequeno" (click)="guardarSignos()">Registrar</button></div>
+      </section>
+    }
+    <section class="tarjeta">
+      <div class="tarjeta__titulo"><span class="icono">history</span>Tomas anteriores</div>
+      <div class="tabla-contenedor">
+        <table class="tabla">
+          <thead><tr><th>Fecha</th><th>PA</th><th>FC</th><th>FR</th><th>T °C</th><th>SpO₂</th><th>Registró</th></tr></thead>
+          <tbody>
+            @for (s of signos(); track s.id) {
+              <tr [class.fila--critica]="critico(s)">
+                <td>{{ s.fecha | date: 'dd/MM h:mm a' }}</td>
+                <td>{{ s.presionSistolica ?? '—' }}/{{ s.presionDiastolica ?? '—' }}</td>
+                <td>{{ s.frecuenciaCardiaca ?? '—' }}</td><td>{{ s.frecuenciaRespiratoria ?? '—' }}</td>
+                <td>{{ s.temperatura ?? '—' }}</td><td>{{ s.saturacionOxigeno ?? '—' }}</td><td>{{ s.registradoPor }}</td>
+              </tr>
+            } @empty {
+              <tr><td colspan="7" class="vacio">Sin tomas registradas.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+
+  @case ('notas') {
+    @if (puedeRegistrar()) {
+      <section class="tarjeta">
+        <textarea class="area" rows="3" [(ngModel)]="textoNota" placeholder="Evolución, cuidados realizados, respuesta del paciente…"
+          aria-label="Nota de enfermería"></textarea>
+        <div class="acciones"><button type="button" class="btn btn--primario btn--pequeno" (click)="guardarNota()" [disabled]="!textoNota.trim()">
+          Guardar nota</button></div>
+      </section>
+    }
+    <section class="tarjeta">
+      @for (n of notas(); track n.id) {
+        <div class="nota"><small>{{ n.fecha | date: 'dd/MM h:mm a' }} · {{ n.usuario }}</small><p>{{ n.texto }}</p></div>
+      } @empty {
+        <p class="vacio">Sin notas de enfermería.</p>
+      }
+    </section>
+  }
+
+  @case ('eventos') {
+    <section class="tarjeta">
+      <div class="titulo-accion">
+        <div class="tarjeta__titulo"><span class="icono">report</span>Eventos adversos e incidentes</div>
+        @if (puedeRegistrar() && !reportando()) {
+          <button type="button" class="btn btn--secundario btn--pequeno" (click)="reportando.set(true)"><span class="icono">add</span>Reportar</button>
+        }
+      </div>
+      @if (reportando()) {
+        <div class="form-evento">
+          <label>Tipo
+            <select [(ngModel)]="evento.tipo" [class.error]="erroresEvento()['tipo']">
+              <option value="">Seleccione…</option>
+              @for (t of tiposEvento; track t.valor) { <option [value]="t.valor">{{ t.etiqueta }}</option> }
+            </select></label>
+          <label>Severidad
+            <select [(ngModel)]="evento.severidad" [class.error]="erroresEvento()['severidad']">
+              <option value="">Seleccione…</option>
+              @for (s of severidades; track s.valor) { <option [value]="s.valor">{{ s.etiqueta }}</option> }
+            </select></label>
+          <label>Cuándo ocurrió<input type="datetime-local" [(ngModel)]="evento.ocurridoEn" [class.error]="erroresEvento()['ocurridoEn']" /></label>
+          <label>Lugar<input [(ngModel)]="evento.lugar" placeholder="p. ej. Habitación 204" /></label>
+          <label class="ancho">Qué pasó<textarea rows="3" [(ngModel)]="evento.descripcion" [class.error]="erroresEvento()['descripcion']"></textarea></label>
+          <label class="ancho">Acciones inmediatas<textarea rows="2" [(ngModel)]="evento.accionesInmediatas"
+            [class.error]="erroresEvento()['accionesInmediatas']"></textarea></label>
+          <label class="ancho">Médico informado (opcional)<input [(ngModel)]="evento.medicoNotificado" /></label>
+        </div>
+        @if (mensajeEvento()) {
+          <p class="campo__error">{{ mensajeEvento() }}</p>
+        }
+        <div class="acciones">
+          <button type="button" class="btn btn--secundario btn--pequeno" (click)="reportando.set(false)">Cancelar</button>
+          <button type="button" class="btn btn--primario btn--pequeno" (click)="reportarEvento()">Reportar evento</button>
+        </div>
+      }
+      @for (e of eventos(); track e.id) {
+        <div class="evento" [class.evento--grave]="e.severidad === 'GRAVE' || e.severidad === 'MORTAL'">
+          <div class="evento__cabecera">
+            <strong>{{ e.tipoDescripcion }}</strong>
+            <span class="chip" [class]="'chip ' + (e.severidad === 'GRAVE' || e.severidad === 'MORTAL' ? 'chip--critico' : e.severidad === 'INCIDENTE_SIN_DANO' ? 'chip--info' : 'chip--alerta')">
+              {{ e.severidadDescripcion }}</span>
+          </div>
+          <small>{{ e.ocurridoEn | date: 'dd/MM/yyyy h:mm a' }}{{ e.lugar ? ' · ' + e.lugar : '' }} · reportó {{ e.reportadoPor }}</small>
+          <p>{{ e.descripcion }}</p>
+          <p><strong>Acciones:</strong> {{ e.accionesInmediatas }}</p>
+        </div>
+      } @empty {
+        @if (!reportando()) { <p class="vacio">Sin eventos reportados.</p> }
+      }
+    </section>
+  }
+
+  @case ('turno') {
+    @if (resumen(); as r) {
+      <section class="tarjeta">
+        <div class="tarjeta__titulo"><span class="icono">swap_horiz</span>Turno {{ r.turno.toLowerCase() }} · desde {{ r.desde | date: 'h:mm a' }}</div>
+        <div class="resumen-turno">
+          @for (s of seccionesTurno(); track s.t) {
+            @if (s.l.length) {
+              <div>
+                <h4>{{ s.t }}</h4>
+                <ul>@for (x of s.l; track $index) { <li [class.atrasada]="x.startsWith('ATRASADA')">{{ x }}</li> }</ul>
+              </div>
+            }
+          }
+        </div>
+        @if (r.ultimosSignos) {
+          <h4>Últimos signos</h4>
+          <app-tarjetas-signos [signos]="r.ultimosSignos" />
+        }
+        @if (esEnfermeria()) {
+          <label class="nota-entrega">Nota para quien recibe (opcional)
+            <textarea rows="2" [(ngModel)]="notaEntrega" placeholder="Lo que no está en el sistema y el siguiente turno debe saber"></textarea></label>
+          <div class="acciones"><button type="button" class="btn btn--primario" (click)="entregar()"><span class="icono">task_alt</span>Entregar turno</button></div>
+        }
+      </section>
+    }
+    <section class="tarjeta">
+      <div class="tarjeta__titulo"><span class="icono">history</span>Entregas anteriores</div>
+      @for (e of entregas(); track e.id) {
+        <div class="entrega">
+          <button type="button" class="enlace" (click)="entregaVista.set(entregaVista() === e.id ? null : e.id)">
+            {{ e.fecha | date: 'dd/MM h:mm a' }} · turno {{ e.turno.toLowerCase() }} · {{ e.entregadoPor }}</button>
+          @if (e.nota) { <p><strong>Nota:</strong> {{ e.nota }}</p> }
+          @if (entregaVista() === e.id) { <pre>{{ e.resumen }}</pre> }
+        </div>
+      } @empty {
+        <p class="vacio">Aún no se ha entregado turno de este paciente.</p>
+      }
+    </section>
+  }
+}
+
+@if (administrando(); as a) {
+  <app-dialogo-administrar [orden]="a.orden" [horario]="a.horario" (registrado)="registrado($event)" (cerrar)="administrando.set(null)" />
+}

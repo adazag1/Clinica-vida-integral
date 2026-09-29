@@ -129,6 +129,26 @@ Con el perfil `local` se crean 4 profesionales de prueba; el usuario `medico` es
 - **Rangos configurables** en *Laboratorio → Rangos de referencia y críticos*, sin programar. Los iniciales son
   de adultos de referencia general: el laboratorio debe ajustarlos a su método y población.
 
+## Enfermería (Fase 6)
+
+- **Pacientes a cargo** (usuario `enfermeria`): quienes tienen órdenes vigentes o están en urgencias u
+  hospitalización, con dosis atrasadas, próximas, alergias y signos críticos; lo urgente va primero.
+- El **médico ordena** desde la consulta, incluso después de firmarla: medicamento con dosis, vía, frecuencia
+  y duración, dieta o cuidado de enfermería. Enfermería recibe el aviso. Si el paciente es alérgico, se bloquea.
+- **Hoja del paciente**: todas las órdenes con su horario de las últimas y próximas 12 h (pendiente, atrasada,
+  administrada, omitida) y los exámenes de laboratorio pendientes de toma de muestra.
+- **Administración segura (cinco correctos)**: la enfermera confirma documento del paciente, medicamento,
+  dosis y vía, y el sistema los compara con la orden. La hora la pone el servidor; fuera de ±30 min exige
+  justificar el retraso. Omitir o registrar un rechazo exige motivo y avisa al médico.
+- **Alto riesgo** (insulinas, heparinas, opioides): exige la doble verificación de otro profesional de
+  enfermería o un médico con su usuario y contraseña. Las contraseñas erradas cuentan para bloquear la cuenta.
+- Una orden **vencida o suspendida** ya no se puede ejecutar; al suspenderla el médico, enfermería se entera.
+- **Eventos adversos** clasificados por tipo y severidad; todos llegan a auditoría y los graves también a los médicos.
+- **Notas de enfermería** y **entrega de turno** (mañana 7–13, tarde 13–19, noche 19–7): el resumen se arma solo
+  con lo registrado y se guarda tal como estaba al entregar.
+- Signos críticos registrados sin consulta abierta avisan a los médicos. El laboratorio avisa a enfermería
+  para tomar la muestra y cuando hay que repetirla.
+
 ## Despliegue en Azure
 
 | | Dirección |
@@ -178,7 +198,7 @@ Azure la vuelve a encender sola a los 7 días. Para borrar todo: `az group delet
 - [x] **Fase 3** — Agendamiento (RFAGE-002 a RFAGE-015) y notificaciones internas
 - [x] **Fase 4** — Consulta médica e historia clínica (RFMT-002, 003, 007 a 012)
 - [x] **Fase 5** — Órdenes, laboratorio y notificaciones (RFLC-002 a 015, RFMT-004 a 006)
-- [ ] Fase 6 — Enfermería
+- [x] **Fase 6** — Enfermería (RFENF-002 a 010)
 - [ ] Fase 7 — Radiología, patología y gestión documental
 - [ ] Fase 8 — Facturación y auditoría clínica
 - [ ] Fase 9 — Motor de IA (reglas + Azure OpenAI)
