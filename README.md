@@ -21,10 +21,10 @@ clinica-vida-integral/
 
 | Componente | Local | Azure |
 |---|---|---|
-| Frontend | `ng serve` (puerto 4200) | Azure Static Web Apps |
-| Backend | `mvnw spring-boot:run` (puerto 8080) | Azure App Service (Java 21) |
-| Base de datos | PostgreSQL 17 en Docker | Azure Database for PostgreSQL Flexible Server |
-| Secretos | `application-local.yml` | Azure Key Vault |
+| Frontend | `ng serve` (puerto 4200) | Azure Storage, sitio web estático |
+| Backend | `mvnw spring-boot:run` (puerto 8080) | Azure App Service (Linux, Java 21, B1) |
+| Base de datos | PostgreSQL 17 en Docker | Azure Database for PostgreSQL Flexible Server 17 (B1ms) |
+| Secretos | `application-local.yml` | Configuración de la aplicación en App Service |
 | Monitoreo | consola | Application Insights |
 
 ## Cómo ejecutar en local
@@ -75,6 +75,48 @@ cd frontend && npm test
    - *Consentimientos* con quién los otorga, fecha, hora y responsable.
 4. **Enviar a consulta** solo se habilita cuando no falta ningún requisito; el paciente pasa a la
    columna del médico ordenado por gravedad.
+
+## Despliegue en Azure
+
+| | Dirección |
+|---|---|
+| Aplicación | https://clinicavidaweb.z47.web.core.windows.net |
+| API | https://clinica-vida-integral-api.azurewebsites.net (Swagger en `/swagger-ui.html`) |
+
+Todo está en el grupo de recursos `rg-clinica-vida-integral`, región **Chile Central** (la suscripción
+Azure for Students solo permite Spain Central, Chile Central, Canada Central, Belgium Central y North
+Central US; por esa restricción el frontend usa Storage y no Static Web Apps).
+
+- `clinica-vida-integral-db`: PostgreSQL 17, base `clinica`. Solo acepta conexiones desde servicios de Azure, con TLS.
+- `clinica-vida-integral-api`: backend con el perfil `azure`. Contraseñas y llave JWT en la configuración de
+  la aplicación (`DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `CORS_ORIGINS`, `SEED_HABILITADO`, `SEED_PASSWORD`).
+- `clinicavidaweb`: archivos compilados de Angular en el contenedor `$web`.
+
+Los usuarios de prueba en Azure usan una contraseña **distinta** a la local; la tiene el responsable del
+despliegue. Nunca se sube a este repositorio.
+
+### Publicar una nueva versión
+
+```bash
+# Backend
+cd backend && ./mvnw package -DskipTests
+az webapp deploy -g rg-clinica-vida-integral -n clinica-vida-integral-api --src-path target/clinica-backend-0.0.1-SNAPSHOT.jar --type jar
+
+# Frontend
+cd frontend && npx ng build
+az storage blob upload-batch --account-name clinicavidaweb --auth-mode key -d '$web' -s dist/frontend/browser --overwrite
+```
+
+### Ahorrar crédito
+
+La base de datos es lo más costoso. Cuando no se use por varios días:
+
+```bash
+az postgres flexible-server stop  -g rg-clinica-vida-integral -n clinica-vida-integral-db
+az postgres flexible-server start -g rg-clinica-vida-integral -n clinica-vida-integral-db
+```
+
+Azure la vuelve a encender sola a los 7 días. Para borrar todo: `az group delete -n rg-clinica-vida-integral`.
 
 ## Fases
 
