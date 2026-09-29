@@ -15,8 +15,15 @@ export const MODULOS: Modulo[] = [
     ruta: 'pacientes',
     titulo: 'Pacientes',
     icono: 'group',
-    descripcion: 'Registro, búsqueda y episodios de atención',
-    roles: ['ADMISIONES', 'MEDICO', 'ENFERMERIA'],
+    descripcion: 'Registro, búsqueda e historial de atenciones',
+    roles: ['ADMISIONES', 'MEDICO', 'ENFERMERIA', 'AGENDAMIENTO'],
+  },
+  {
+    ruta: 'admisiones',
+    titulo: 'Admisiones y triage',
+    icono: 'emergency',
+    descripcion: 'Lista de espera, triage, cobertura y consentimientos',
+    roles: ['ADMISIONES', 'ENFERMERIA', 'MEDICO'],
   },
   {
     ruta: 'agenda',

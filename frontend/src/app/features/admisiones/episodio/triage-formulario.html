@@ -1,0 +1,96 @@
+<form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+  <div class="signos" formGroupName="signos">
+    @for (c of campos; track c.clave) {
+      <div class="campo" [class.campo--error]="invalidoSigno(c.clave)">
+        <label [for]="c.clave">{{ c.etiqueta }}</label>
+        <div class="campo__control">
+          <input [id]="c.clave" type="number" inputmode="decimal" [formControlName]="c.clave"
+            [min]="c.min" [max]="c.max" [step]="c.paso ?? 1" />
+          <span class="unidad">{{ c.unidad }}</span>
+        </div>
+        @if (invalidoSigno(c.clave)) {
+          <span class="campo__error">{{ errorServidor('signos.' + c.clave) ?? 'Entre ' + c.min + ' y ' + c.max }}</span>
+        }
+      </div>
+    }
+  </div>
+  @if (errorServidor('signos.presionCoherente')) {
+    <div class="alerta alerta--error"><span class="icono">error</span>{{ errorServidor('signos.presionCoherente') }}</div>
+  }
+
+  <div>
+    <div class="campo" [class.campo--error]="form.controls.sintomaPrincipal.invalid && form.controls.sintomaPrincipal.touched">
+      <label for="sintomaPrincipal">Síntoma principal</label>
+      <div class="campo__control">
+        <input id="sintomaPrincipal" formControlName="sintomaPrincipal" autocomplete="off"
+          placeholder="Ej.: dolor torácico opresivo de 1 hora" />
+      </div>
+      @if (form.controls.sintomaPrincipal.invalid && form.controls.sintomaPrincipal.touched) {
+        <span class="campo__error">Ingrese el síntoma principal</span>
+      }
+    </div>
+
+    @if (sugerencia(); as s) {
+      <div class="sugerencia" [class]="'sugerencia sugerencia--' + s.nivel" aria-live="polite">
+        <span class="triage triage--{{ s.nivel }}">{{ romano[s.nivel] }}</span>
+        <div>
+          <strong>Sugerido: {{ s.descripcion }}</strong>
+          <ul>
+            @for (c of s.criterios; track c) {
+              <li>{{ c }}</li>
+            }
+          </ul>
+          @for (a of s.advertencias; track a) {
+            <p class="sugerencia__advertencia"><span class="icono">warning</span>{{ a }}</p>
+          }
+          <p class="sugerencia__nota">
+            Sugerencia basada solo en signos vitales. Valore también los síntomas: usted decide el nivel final.
+          </p>
+        </div>
+      </div>
+    } @else {
+      <p class="campo__ayuda sin-sugerencia">Complete los signos vitales para ver el nivel sugerido.</p>
+    }
+
+    <div class="rejilla">
+      <div class="campo" [class.campo--error]="form.controls.nivelAsignado.invalid && form.controls.nivelAsignado.touched">
+        <label for="nivelAsignado">Nivel asignado</label>
+        <div class="campo__control">
+          <select id="nivelAsignado" formControlName="nivelAsignado">
+            <option [ngValue]="0" disabled>Seleccione…</option>
+            @for (n of niveles; track n.nivel) {
+              <option [ngValue]="n.nivel">{{ n.etiqueta }}</option>
+            }
+          </select>
+        </div>
+        @if (form.controls.nivelAsignado.invalid && form.controls.nivelAsignado.touched) {
+          <span class="campo__error">Seleccione el nivel de triage</span>
+        }
+      </div>
+    </div>
+
+    @if (ajustado) {
+      <div class="campo" [class.campo--error]="!!errorServidor('justificacionAjuste') || (form.controls.justificacionAjuste.touched && !form.controls.justificacionAjuste.value.trim())">
+        <label for="justificacionAjuste">Justificación del ajuste</label>
+        <div class="campo__control campo__control--area">
+          <textarea id="justificacionAjuste" formControlName="justificacionAjuste" rows="2"
+            placeholder="Por qué asigna un nivel distinto al sugerido"></textarea>
+        </div>
+        @if (errorServidor('justificacionAjuste')) {
+          <span class="campo__error">{{ errorServidor('justificacionAjuste') }}</span>
+        }
+      </div>
+    }
+  </div>
+
+  @if (error()) {
+    <div class="alerta alerta--error" role="alert"><span class="icono">error</span>{{ error() }}</div>
+  }
+
+  <div class="acciones">
+    <button type="button" class="btn btn--secundario" (click)="cancelar.emit()">Cancelar</button>
+    <button type="submit" class="btn btn--primario" [disabled]="guardando()">
+      <span class="icono">save</span>{{ guardando() ? 'Guardando…' : 'Guardar triage' }}
+    </button>
+  </div>
+</form>

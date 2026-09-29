@@ -1,0 +1,303 @@
+<a class="volver" routerLink="/admisiones"><span class="icono">arrow_back</span> Lista de espera</a>
+
+@if (episodio(); as e) {
+  <section class="tarjeta encabezado">
+    <div class="encabezado__paciente">
+      <span class="encabezado__avatar"><span class="icono">person</span></span>
+      <div>
+        <h2><a [routerLink]="['/pacientes', e.paciente.id]">{{ e.paciente.nombreCompleto }}</a></h2>
+        <p>
+          {{ e.paciente.tipoDocumento === 'TEMPORAL' ? 'Sin documento' : e.paciente.tipoDocumento }} {{ e.paciente.numeroDocumento }}
+          @if (e.paciente.edad !== null) {
+            · {{ e.paciente.edad }} años
+          }
+          · {{ e.paciente.aseguradora ?? 'Sin aseguradora' }}
+        </p>
+      </div>
+    </div>
+    <dl class="datos">
+      <div><dt>Número de atención</dt><dd>{{ e.numero }}</dd></div>
+      <div><dt>Tipo</dt><dd>{{ e.tipoAtencionDescripcion }}</dd></div>
+      <div><dt>Ingreso</dt><dd>{{ e.fechaIngreso | date: 'dd/MM/yyyy hh:mm a' }} · {{ e.admitidoPor }}</dd></div>
+      <div><dt>Estado</dt><dd><span class="chip" [class]="'chip ' + claseEstado(e.estado)">{{ e.estadoDescripcion }}</span></dd></div>
+      <div class="rejilla__ancho"><dt>Motivo de consulta</dt><dd>{{ e.motivoConsulta }}</dd></div>
+      @if (e.motivoAnulacion) {
+        <div class="rejilla__ancho"><dt>Motivo de anulación</dt><dd>{{ e.motivoAnulacion }}</dd></div>
+      }
+    </dl>
+  </section>
+
+  @if (aviso()) {
+    <div class="alerta alerta--exito" role="status"><span class="icono">check_circle</span>{{ aviso() }}</div>
+  }
+  @if (error() && !abierta()) {
+    <div class="alerta alerta--error" role="alert"><span class="icono">error</span>{{ error() }}</div>
+  }
+
+  @if (editable()) {
+    <section class="tarjeta requisitos">
+      <div class="tarjeta__titulo"><span class="icono">checklist</span>Requisitos para pasar a consulta</div>
+      <ul>
+        @for (r of requisitos(); track r.titulo) {
+          <li [class.cumplido]="!r.pendiente">
+            <span class="icono">{{ r.pendiente ? 'radio_button_unchecked' : 'check_circle' }}</span>
+            <span>
+              <strong>{{ r.titulo }}</strong>
+              @if (r.pendiente) {
+                <span class="requisito__falta">Falta {{ r.pendiente.mensaje }}</span>
+              }
+            </span>
+          </li>
+        }
+      </ul>
+      @if (esClinico()) {
+        <div class="acciones">
+          <button type="button" class="btn btn--primario" (click)="enviarAConsulta()"
+            [disabled]="e.pendientes.length > 0 || enviando()">
+            <span class="icono">send</span> Enviar a consulta
+          </button>
+        </div>
+      }
+    </section>
+  }
+
+  <div class="secciones">
+    @if (urgencias()) {
+      <section class="tarjeta">
+        <div class="tarjeta__titulo"><span class="icono">monitor_heart</span>Triage</div>
+        @if (abierta() === 'triage') {
+          <app-triage-formulario [episodio]="e" (guardado)="actualizado($event)" (cancelar)="abierta.set(null)" />
+        } @else if (e.triage; as t) {
+          <div class="triage-resumen">
+            <span class="triage triage--{{ t.nivelAsignado }} triage--grande">{{ romano[t.nivelAsignado] }}</span>
+            <div>
+              <strong>{{ t.descripcionNivel }}</strong>
+              <p>{{ t.sintomaPrincipal }}</p>
+              @if (t.justificacionAjuste) {
+                <p class="nota">Sugerido {{ romano[t.nivelSugerido] }}, ajustado: {{ t.justificacionAjuste }}</p>
+              }
+            </div>
+          </div>
+          <dl class="datos signos">
+            <div><dt>FC</dt><dd>{{ t.signos.frecuenciaCardiaca }} lpm</dd></div>
+            <div><dt>FR</dt><dd>{{ t.signos.frecuenciaRespiratoria }} rpm</dd></div>
+            <div><dt>PA</dt><dd>{{ t.signos.presionSistolica }}/{{ t.signos.presionDiastolica }} mmHg</dd></div>
+            <div><dt>Temperatura</dt><dd>{{ t.signos.temperatura | number: '1.1-1' }} °C</dd></div>
+            <div><dt>SpO₂</dt><dd>{{ t.signos.saturacionOxigeno }} %</dd></div>
+            <div><dt>Glasgow</dt><dd>{{ t.signos.glasgow }}/15</dd></div>
+            <div><dt>Dolor</dt><dd>{{ t.signos.dolor }}/10</dd></div>
+          </dl>
+          <p class="nota">
+            Clasificado por {{ t.clasificadoPor }} · {{ t.clasificadoEn | date: 'dd/MM/yyyy hh:mm a' }}
+            @if (t.modificadoPor && t.modificadoEn !== t.clasificadoEn) {
+              · reclasificado por {{ t.modificadoPor }} · {{ t.modificadoEn | date: 'hh:mm a' }}
+            }
+          </p>
+          @if (editable() && esClinico()) {
+            <button type="button" class="btn btn--secundario btn--pequeno" (click)="abrir('triage')">Reclasificar</button>
+          }
+        } @else {
+          <p class="vacio">El paciente aún no ha sido clasificado.</p>
+          @if (editable() && esClinico()) {
+            <button type="button" class="btn btn--primario" (click)="abrir('triage')">
+              <span class="icono">monitor_heart</span> Clasificar triage
+            </button>
+          }
+        }
+      </section>
+    }
+
+    <section class="tarjeta">
+      <div class="tarjeta__titulo"><span class="icono">verified_user</span>Cobertura</div>
+      <p>
+        <span class="chip" [class]="'chip ' + claseCobertura(e.estadoCobertura)">{{ e.estadoCoberturaDescripcion }}</span>
+      </p>
+      @if (e.estadoCobertura !== 'PENDIENTE' && e.coberturaVerificadaPor) {
+        <dl class="datos">
+          @if (e.aseguradora) {
+            <div><dt>Aseguradora</dt><dd>{{ e.aseguradora }}</dd></div>
+          }
+          @if (e.planCobertura) {
+            <div><dt>Plan</dt><dd>{{ e.planCobertura }}</dd></div>
+          }
+          @if (e.numeroAutorizacion) {
+            <div><dt>Autorización</dt><dd>{{ e.numeroAutorizacion }}</dd></div>
+          }
+          @if (e.observacionCobertura) {
+            <div class="rejilla__ancho">
+              <dt>{{ e.estadoCobertura === 'EXCEPCION_URGENCIA' ? 'Justificación' : 'Observación' }}</dt>
+              <dd>{{ e.observacionCobertura }}</dd>
+            </div>
+          }
+          <div><dt>Registró</dt><dd>{{ e.coberturaVerificadaPor }} · {{ e.coberturaVerificadaEn | date: 'dd/MM/yyyy hh:mm a' }}</dd></div>
+        </dl>
+      }
+
+      @if (abierta() === 'cobertura') {
+        <form [formGroup]="cobertura" (ngSubmit)="guardarCobertura()" class="formulario" novalidate>
+          <div class="rejilla">
+            <div class="campo">
+              <label for="resultado">Resultado de la verificación</label>
+              <div class="campo__control">
+                <select id="resultado" formControlName="resultado">
+                  @for (r of resultadosCobertura; track r.valor) {
+                    <option [value]="r.valor">{{ r.etiqueta }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+            <div class="campo">
+              <label for="aseguradoraCob">Aseguradora</label>
+              <div class="campo__control"><input id="aseguradoraCob" formControlName="aseguradora" /></div>
+            </div>
+            <div class="campo">
+              <label for="plan">Plan</label>
+              <div class="campo__control"><input id="plan" formControlName="plan" placeholder="Ej.: POS, complementario" /></div>
+            </div>
+            <div class="campo">
+              <label for="numeroAutorizacion">Número de autorización</label>
+              <div class="campo__control"><input id="numeroAutorizacion" formControlName="numeroAutorizacion" /></div>
+            </div>
+            <div class="campo rejilla__ancho">
+              <label for="observacion">Observación</label>
+              <div class="campo__control"><input id="observacion" formControlName="observacion" /></div>
+            </div>
+          </div>
+          @if (error()) {
+            <div class="alerta alerta--error" role="alert"><span class="icono">error</span>{{ error() }}</div>
+          }
+          <div class="acciones">
+            <button type="button" class="btn btn--secundario" (click)="abrir(null)">Cancelar</button>
+            <button type="submit" class="btn btn--primario" [disabled]="enviando()">Guardar verificación</button>
+          </div>
+        </form>
+      } @else if (abierta() === 'excepcion') {
+        <div class="formulario">
+          <div class="alerta alerta--aviso">
+            <span class="icono">warning</span>
+            <span>En urgencias vitales la atención no se retrasa por falta de autorización. Quedará registrado quién la autorizó y por qué.</span>
+          </div>
+          <div class="campo" [class.campo--error]="justificacion.invalid && justificacion.touched">
+            <label for="justificacionExc">Justificación</label>
+            <div class="campo__control campo__control--area">
+              <textarea id="justificacionExc" [formControl]="justificacion" rows="2"></textarea>
+            </div>
+          </div>
+          @if (error()) {
+            <div class="alerta alerta--error" role="alert"><span class="icono">error</span>{{ error() }}</div>
+          }
+          <div class="acciones">
+            <button type="button" class="btn btn--secundario" (click)="abrir(null)">Cancelar</button>
+            <button type="button" class="btn btn--primario" (click)="guardarExcepcion()" [disabled]="enviando()">Atender sin autorización</button>
+          </div>
+        </div>
+      } @else if (editable()) {
+        <div class="acciones acciones--izq">
+          @if (esAdmisiones()) {
+            <button type="button" class="btn btn--secundario btn--pequeno" (click)="abrir('cobertura')">
+              {{ e.estadoCobertura === 'PENDIENTE' ? 'Registrar verificación' : 'Nueva verificación' }}
+            </button>
+          }
+          @if (urgencias() && e.estadoCobertura !== 'EXCEPCION_URGENCIA' && esClinico()) {
+            <button type="button" class="btn btn--secundario btn--pequeno" (click)="abrir('excepcion')">Atender sin autorización</button>
+          }
+        </div>
+      }
+    </section>
+
+    <section class="tarjeta">
+      <div class="tarjeta__titulo"><span class="icono">draw</span>Consentimientos</div>
+      @for (c of e.consentimientos; track c.id) {
+        <div class="consentimiento">
+          <span class="icono" [class.rechazado]="!c.aceptado">{{ c.aceptado ? 'task_alt' : 'cancel' }}</span>
+          <div>
+            <strong>{{ c.tipoDescripcion }}</strong>
+            <p>
+              {{ c.aceptado ? 'Aceptado' : 'Rechazado' }} por {{ c.otorgadoPor }}{{ c.parentesco ? ' (' + c.parentesco + ')' : '' }}
+              · {{ c.registradoEn | date: 'dd/MM/yyyy hh:mm a' }} · registró {{ c.registradoPor }}
+            </p>
+            @if (c.observaciones) {
+              <p class="nota">{{ c.observaciones }}</p>
+            }
+          </div>
+        </div>
+      } @empty {
+        @if (abierta() !== 'consentimiento') {
+          <p class="vacio">Sin consentimientos registrados.</p>
+        }
+      }
+
+      @if (abierta() === 'consentimiento') {
+        <form [formGroup]="consentimiento" (ngSubmit)="guardarConsentimiento()" class="formulario" novalidate>
+          <div class="rejilla">
+            <div class="campo rejilla__ancho">
+              <label for="tipoCons">Tipo</label>
+              <div class="campo__control">
+                <select id="tipoCons" formControlName="tipo">
+                  @for (t of tiposDisponibles(); track t.valor) {
+                    <option [value]="t.valor">{{ t.etiqueta }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+            <div class="campo" [class.campo--error]="consentimiento.controls.otorgadoPor.invalid && consentimiento.controls.otorgadoPor.touched">
+              <label for="otorgadoPor">Otorgado por</label>
+              <div class="campo__control"><input id="otorgadoPor" formControlName="otorgadoPor" /></div>
+              <span class="campo__ayuda">El paciente o su acompañante</span>
+            </div>
+            <div class="campo">
+              <label for="parentesco">Parentesco (si firma un acompañante)</label>
+              <div class="campo__control"><input id="parentesco" formControlName="parentesco" /></div>
+            </div>
+          </div>
+          <div class="respuesta" role="radiogroup" aria-label="Respuesta">
+            <label class="check"><input type="radio" formControlName="aceptado" [value]="true" /> Aceptado</label>
+            <label class="check"><input type="radio" formControlName="aceptado" [value]="false" /> Rechazado</label>
+          </div>
+          <div class="campo">
+            <label for="observacionesCons">Observaciones</label>
+            <div class="campo__control"><input id="observacionesCons" formControlName="observaciones" /></div>
+          </div>
+          @if (error()) {
+            <div class="alerta alerta--error" role="alert"><span class="icono">error</span>{{ error() }}</div>
+          }
+          <div class="acciones">
+            <button type="button" class="btn btn--secundario" (click)="abrir(null)">Cancelar</button>
+            <button type="submit" class="btn btn--primario" [disabled]="enviando()">Registrar</button>
+          </div>
+        </form>
+      } @else if (editable() && esClinico() && tiposDisponibles().length) {
+        <div class="acciones acciones--izq">
+          <button type="button" class="btn btn--secundario btn--pequeno" (click)="abrir('consentimiento')">Registrar consentimiento</button>
+        </div>
+      }
+    </section>
+  </div>
+
+  @if (esAdmisiones() && (e.estado === 'EN_ADMISION' || e.estado === 'EN_ESPERA_CONSULTA')) {
+    <section class="tarjeta anular">
+      @if (abierta() === 'anular') {
+        <div class="campo" [class.campo--error]="justificacion.invalid && justificacion.touched">
+          <label for="justificacionAnular">Motivo de la anulación</label>
+          <div class="campo__control campo__control--area">
+            <textarea id="justificacionAnular" [formControl]="justificacion" rows="2"
+              placeholder="Ej.: atención creada por error, el paciente se retiró"></textarea>
+          </div>
+        </div>
+        @if (error()) {
+          <div class="alerta alerta--error" role="alert"><span class="icono">error</span>{{ error() }}</div>
+        }
+        <div class="acciones">
+          <button type="button" class="btn btn--secundario" (click)="abrir(null)">Cancelar</button>
+          <button type="button" class="btn btn--peligro" (click)="anular()" [disabled]="enviando()">Anular atención</button>
+        </div>
+      } @else {
+        <button type="button" class="btn btn--peligro btn--pequeno" (click)="abrir('anular')">
+          <span class="icono">block</span> Anular atención
+        </button>
+      }
+    </section>
+  }
+} @else if (error()) {
+  <div class="alerta alerta--error" role="alert"><span class="icono">error</span>{{ error() }}</div>
+}

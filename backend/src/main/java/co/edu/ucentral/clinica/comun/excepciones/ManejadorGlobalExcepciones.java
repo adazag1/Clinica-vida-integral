@@ -30,6 +30,12 @@ public class ManejadorGlobalExcepciones {
                 "Hay campos obligatorios o inválidos", campos));
     }
 
+    @ExceptionHandler(DatosInvalidosException.class)
+    public ResponseEntity<ApiError> datosInvalidos(DatosInvalidosException e) {
+        return ResponseEntity.badRequest().body(new ApiError(Instant.now(), 400, "VALIDACION",
+                e.getMessage(), e.getCampos()));
+    }
+
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiError> cuerpoIlegible(HttpMessageNotReadableException e) {
         return ResponseEntity.badRequest()

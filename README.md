@@ -53,10 +53,33 @@ definida en `app.seed.password-prueba` de `backend/src/main/resources/applicatio
 
 > ⚠️ Usar solo datos ficticios. Nunca cargar datos reales de pacientes (Ley 1581 de 2012).
 
+### Pruebas
+
+```bash
+cd backend && ./mvnw test      # requiere Docker (Testcontainers levanta PostgreSQL)
+cd frontend && npm test
+```
+
+## Flujo de admisión (Fase 2)
+
+1. **Pacientes** → buscar por documento, nombre, fecha de nacimiento o teléfono (sin importar tildes).
+   Al registrar uno nuevo, el sistema avisa si hay pacientes parecidos (nombre mal escrito, misma
+   fecha de nacimiento, mismo teléfono) antes de crear un duplicado. Sin documento se genera un
+   identificador temporal `TMP-…`. Todo cambio de datos exige un motivo y queda en el historial.
+2. **Admitir paciente** → genera el número de atención `AT-año-######` (urgencias, consulta externa u
+   hospitalización). Un paciente no puede tener dos atenciones abiertas.
+3. **Admisiones y triage** → lista de espera que se actualiza sola. En cada atención:
+   - *Triage* (urgencias): signos vitales con validación de rangos y nivel sugerido I–V; si se asigna
+     otro nivel hay que justificarlo. Los umbrales de `CalculadoraTriage` deben validarlos los médicos.
+   - *Cobertura*: resultado de la verificación con la aseguradora, o atención sin autorización en urgencias.
+   - *Consentimientos* con quién los otorga, fecha, hora y responsable.
+4. **Enviar a consulta** solo se habilita cuando no falta ningún requisito; el paciente pasa a la
+   columna del médico ordenado por gravedad.
+
 ## Fases
 
 - [x] **Fase 1** — Base: login JWT, roles, auditoría de accesos, layout del frontend
-- [ ] Fase 2 — Pacientes, admisiones y triage
+- [x] **Fase 2** — Pacientes, admisiones y triage (RFADM-002 a RFADM-013)
 - [ ] Fase 3 — Agendamiento
 - [ ] Fase 4 — Consulta médica / historia clínica
 - [ ] Fase 5 — Órdenes, laboratorio y notificaciones

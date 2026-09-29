@@ -1,0 +1,230 @@
+<a class="volver" [routerLink]="editando() ? ['/pacientes', id()] : ['/pacientes']">
+  <span class="icono">arrow_back</span> Volver
+</a>
+
+<div class="cabecera-pagina">
+  <h2>{{ editando() ? 'Editar paciente' : 'Nuevo paciente' }}</h2>
+</div>
+
+@if (cargando()) {
+  <p class="cargando">Cargando…</p>
+} @else {
+  <form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+    <section class="tarjeta">
+      <div class="tarjeta__titulo"><span class="icono">badge</span>Identificación</div>
+
+      @if (!editando() || original()?.identificacionTemporal) {
+        <label class="check sin-documento">
+          <input type="checkbox" formControlName="sinDocumento" />
+          El paciente llega sin documento (se asigna un identificador temporal)
+        </label>
+      }
+
+      @if (sinDocumento) {
+        <div class="alerta alerta--aviso">
+          <span class="icono">info</span>
+          <span>
+            @if (original()?.identificacionTemporal) {
+              Identificador temporal actual: <strong>{{ original()?.numeroDocumento }}</strong>.
+              Desmarque la casilla para registrar el documento real.
+            } @else {
+              Se generará un identificador temporal (TMP-…). Solo podrá ingresar por urgencias hasta que
+              registre su documento. Si no conoce el nombre, use «NN» y una descripción en apellidos.
+            }
+          </span>
+        </div>
+      } @else {
+        <div class="rejilla">
+          <div class="campo" [class.campo--error]="invalido('tipoDocumento')">
+            <label for="tipoDocumento">Tipo de documento</label>
+            <div class="campo__control">
+              <select id="tipoDocumento" formControlName="tipoDocumento">
+                @for (t of tiposDocumento; track t.valor) {
+                  <option [value]="t.valor">{{ t.etiqueta }}</option>
+                }
+              </select>
+            </div>
+          </div>
+          <div class="campo" [class.campo--error]="invalido('numeroDocumento')">
+            <label for="numeroDocumento">Número de documento</label>
+            <div class="campo__control">
+              <input id="numeroDocumento" formControlName="numeroDocumento" autocomplete="off" />
+            </div>
+            @if (errorServidor('numeroDocumento')) {
+              <span class="campo__error">{{ errorServidor('numeroDocumento') }}</span>
+            }
+          </div>
+        </div>
+      }
+
+      <div class="rejilla">
+        <div class="campo" [class.campo--error]="invalido('nombres')">
+          <label for="nombres">Nombres</label>
+          <div class="campo__control">
+            <input id="nombres" formControlName="nombres" autocomplete="off" />
+          </div>
+          @if (invalido('nombres')) {
+            <span class="campo__error">{{ errorServidor('nombres') ?? 'Ingrese los nombres' }}</span>
+          }
+        </div>
+        <div class="campo" [class.campo--error]="invalido('apellidos')">
+          <label for="apellidos">Apellidos</label>
+          <div class="campo__control">
+            <input id="apellidos" formControlName="apellidos" autocomplete="off" />
+          </div>
+          @if (invalido('apellidos')) {
+            <span class="campo__error">{{ errorServidor('apellidos') ?? 'Ingrese los apellidos' }}</span>
+          }
+        </div>
+        <div class="campo" [class.campo--error]="invalido('fechaNacimiento')">
+          <label for="fechaNacimiento">Fecha de nacimiento</label>
+          <div class="campo__control">
+            <input id="fechaNacimiento" type="date" formControlName="fechaNacimiento" [max]="hoy" />
+          </div>
+          @if (errorServidor('fechaNacimiento')) {
+            <span class="campo__error">{{ errorServidor('fechaNacimiento') }}</span>
+          }
+        </div>
+        <div class="campo" [class.campo--error]="invalido('sexo')">
+          <label for="sexo">Sexo</label>
+          <div class="campo__control">
+            <select id="sexo" formControlName="sexo">
+              <option value="">Seleccione…</option>
+              @for (s of sexos; track s.valor) {
+                <option [value]="s.valor">{{ s.etiqueta }}</option>
+              }
+            </select>
+          </div>
+          @if (errorServidor('sexo')) {
+            <span class="campo__error">{{ errorServidor('sexo') }}</span>
+          }
+        </div>
+      </div>
+    </section>
+
+    @if (duplicados().length) {
+      <section class="tarjeta duplicados" role="alert">
+        <div class="tarjeta__titulo duplicados__titulo">
+          <span class="icono">group</span>
+          {{ duplicados().length === 1 ? 'Existe 1 paciente parecido' : 'Existen ' + duplicados().length + ' pacientes parecidos' }}
+        </div>
+        <p class="duplicados__texto">
+          Verifique si es la misma persona antes de crear un registro nuevo: los duplicados causan historias
+          clínicas incompletas y problemas en facturación.
+        </p>
+        <ul class="duplicados__lista">
+          @for (d of duplicados(); track d.paciente.id) {
+            <li>
+              <div>
+                <a [routerLink]="['/pacientes', d.paciente.id]" target="_blank">{{ d.paciente.nombreCompleto }}</a>
+                <span class="duplicados__doc">{{ d.paciente.tipoDocumento }} {{ d.paciente.numeroDocumento }}</span>
+                <div class="duplicados__coincidencias">
+                  @for (c of d.coincidencias; track c) {
+                    <span class="chip chip--alerta">{{ c }}</span>
+                  }
+                </div>
+              </div>
+              <span class="duplicados__puntaje" title="Puntaje de coincidencia: entre más alto, más probable que sea la misma persona">
+                {{ d.puntaje }}<small>/100</small>
+              </span>
+            </li>
+          }
+        </ul>
+        @if (!editando()) {
+          <label class="check">
+            <input type="checkbox" formControlName="confirmado" />
+            Revisé los pacientes parecidos y confirmo que se trata de otra persona
+          </label>
+        }
+      </section>
+    }
+
+    <section class="tarjeta">
+      <div class="tarjeta__titulo"><span class="icono">contact_phone</span>Contacto y afiliación</div>
+      <div class="rejilla">
+        <div class="campo" [class.campo--error]="invalido('telefono')">
+          <label for="telefono">Teléfono</label>
+          <div class="campo__control">
+            <input id="telefono" type="tel" formControlName="telefono" autocomplete="off" />
+          </div>
+          @if (invalido('telefono')) {
+            <span class="campo__error">{{ errorServidor('telefono') ?? 'Teléfono inválido' }}</span>
+          }
+        </div>
+        <div class="campo" [class.campo--error]="invalido('email')">
+          <label for="email">Correo electrónico</label>
+          <div class="campo__control">
+            <input id="email" type="email" formControlName="email" autocomplete="off" />
+          </div>
+          @if (invalido('email')) {
+            <span class="campo__error">{{ errorServidor('email') ?? 'Correo electrónico inválido' }}</span>
+          }
+        </div>
+        <div class="campo rejilla__ancho">
+          <label for="direccion">Dirección</label>
+          <div class="campo__control">
+            <input id="direccion" formControlName="direccion" autocomplete="off" />
+          </div>
+        </div>
+        <div class="campo" [class.campo--error]="invalido('regimen')">
+          <label for="regimen">Régimen de afiliación</label>
+          <div class="campo__control">
+            <select id="regimen" formControlName="regimen">
+              <option value="">Seleccione…</option>
+              @for (r of regimenes; track r.valor) {
+                <option [value]="r.valor">{{ r.etiqueta }}</option>
+              }
+            </select>
+          </div>
+          @if (errorServidor('regimen')) {
+            <span class="campo__error">{{ errorServidor('regimen') }}</span>
+          }
+        </div>
+        <div class="campo" [class.campo--error]="invalido('aseguradora')">
+          <label for="aseguradora">Aseguradora (EPS)</label>
+          <div class="campo__control">
+            <input id="aseguradora" formControlName="aseguradora" list="lista-aseguradoras" autocomplete="off" />
+            <datalist id="lista-aseguradoras">
+              @for (a of aseguradoras; track a) {
+                <option [value]="a"></option>
+              }
+            </datalist>
+          </div>
+          @if (errorServidor('aseguradora')) {
+            <span class="campo__error">{{ errorServidor('aseguradora') }}</span>
+          } @else if (esParticular) {
+            <span class="campo__ayuda">Opcional para pago particular</span>
+          }
+        </div>
+      </div>
+    </section>
+
+    @if (editando()) {
+      <section class="tarjeta">
+        <div class="campo campo--final" [class.campo--error]="invalido('motivo')">
+          <label for="motivo">Motivo del cambio</label>
+          <div class="campo__control campo__control--area">
+            <textarea id="motivo" formControlName="motivo" rows="2"
+              placeholder="Ej.: corrección de apellido según documento de identidad"></textarea>
+          </div>
+          <span class="campo__ayuda">Queda en el historial del paciente junto con su usuario y la fecha.</span>
+          @if (errorServidor('motivo')) {
+            <span class="campo__error">{{ errorServidor('motivo') }}</span>
+          }
+        </div>
+      </section>
+    }
+
+    @if (error()) {
+      <div class="alerta alerta--error" role="alert"><span class="icono">error</span>{{ error() }}</div>
+    }
+
+    <div class="acciones">
+      <a class="btn btn--secundario" [routerLink]="editando() ? ['/pacientes', id()] : ['/pacientes']">Cancelar</a>
+      <button type="submit" class="btn btn--primario" [disabled]="guardando()">
+        <span class="icono">save</span>
+        {{ guardando() ? 'Guardando…' : editando() ? 'Guardar cambios' : 'Registrar paciente' }}
+      </button>
+    </div>
+  </form>
+}

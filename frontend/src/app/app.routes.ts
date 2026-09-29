@@ -6,7 +6,6 @@ import { EnConstruccion } from './features/en-construccion/en-construccion';
 
 /** Fase en la que se construye cada módulo pendiente (ver README). */
 const FASES: Record<string, string> = {
-  pacientes: 'Fase 2',
   agenda: 'Fase 3',
   consulta: 'Fase 4',
   laboratorio: 'Fase 5',
@@ -18,6 +17,8 @@ const FASES: Record<string, string> = {
   'auditoria-clinica': 'Fase 8',
   reportes: 'Fase 10',
 };
+
+const rolesDe = (ruta: string) => MODULOS.find((m) => m.ruta === ruta)?.roles ?? [];
 
 const modulosPendientes: Routes = MODULOS.filter((m) => FASES[m.ruta]).map((m) => ({
   path: m.ruta,
@@ -39,6 +40,52 @@ export const routes: Routes = [
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'inicio' },
       { path: 'inicio', loadComponent: () => import('./features/inicio/inicio').then((m) => m.Inicio) },
+      {
+        path: 'pacientes',
+        canActivate: [rolGuard],
+        data: { roles: rolesDe('pacientes') },
+        children: [
+          {
+            path: '',
+            loadComponent: () => import('./features/pacientes/lista/pacientes-lista').then((m) => m.PacientesLista),
+          },
+          {
+            path: 'nuevo',
+            canActivate: [rolGuard],
+            data: { roles: ['ADMISIONES'] },
+            loadComponent: () =>
+              import('./features/pacientes/formulario/paciente-formulario').then((m) => m.PacienteFormulario),
+          },
+          {
+            path: ':id',
+            loadComponent: () => import('./features/pacientes/detalle/paciente-detalle').then((m) => m.PacienteDetalle),
+          },
+          {
+            path: ':id/editar',
+            canActivate: [rolGuard],
+            data: { roles: ['ADMISIONES'] },
+            loadComponent: () =>
+              import('./features/pacientes/formulario/paciente-formulario').then((m) => m.PacienteFormulario),
+          },
+        ],
+      },
+      {
+        path: 'admisiones',
+        canActivate: [rolGuard],
+        data: { roles: rolesDe('admisiones') },
+        children: [
+          {
+            path: '',
+            loadComponent: () =>
+              import('./features/admisiones/lista-espera/lista-espera').then((m) => m.ListaEspera),
+          },
+          {
+            path: ':id',
+            loadComponent: () =>
+              import('./features/admisiones/episodio/episodio-detalle').then((m) => m.EpisodioDetalle),
+          },
+        ],
+      },
       {
         path: 'registro-accesos',
         canActivate: [rolGuard],

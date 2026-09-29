@@ -48,10 +48,13 @@
       </button>
       <h1 class="superior__titulo">{{ titulo() }}</h1>
 
-      <label class="buscador">
-        <span class="icono">search</span>
-        <input type="search" placeholder="Buscar paciente…" aria-label="Buscar paciente" />
-      </label>
+      @if (puedeBuscarPacientes()) {
+        <label class="buscador">
+          <span class="icono">search</span>
+          <input #busqueda type="search" placeholder="Buscar paciente…" aria-label="Buscar paciente"
+            (keyup.enter)="buscarPaciente(busqueda.value); busqueda.value = ''" />
+        </label>
+      }
 
       <button type="button" class="superior__campana" aria-label="Notificaciones">
         <span class="icono">notifications</span>

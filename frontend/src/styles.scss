@@ -135,6 +135,20 @@ a {
   width: 100%;
 }
 
+/* Botón con aspecto de enlace */
+.enlace {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--c-azul);
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
 .campo {
   display: flex;
   flex-direction: column;
@@ -183,9 +197,147 @@ a {
   }
 }
 
+.campo__control select,
+.campo__control textarea {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  font: inherit;
+  font-size: 15px;
+  color: var(--c-texto);
+  background: transparent;
+}
+
+.campo__control--area {
+  height: auto;
+  padding: 10px 14px;
+
+  textarea {
+    resize: vertical;
+    min-height: 72px;
+  }
+}
+
+.campo__ayuda {
+  color: var(--c-texto-2);
+  font-size: 13px;
+}
+
 .campo--error .campo__control {
   border-color: var(--c-critico);
 }
+
+/* Formularios en columnas que se apilan en pantallas angostas */
+.rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  column-gap: 16px;
+}
+
+.rejilla__ancho {
+  grid-column: 1 / -1;
+}
+
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.btn--peligro {
+  background: var(--c-superficie);
+  color: var(--c-critico);
+  border-color: #f3b4b4;
+
+  &:hover:not(:disabled) {
+    background: var(--c-critico-suave);
+  }
+}
+
+.btn--pequeno {
+  height: 36px;
+  padding: 0 14px;
+  font-size: 14px;
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+
+  input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--c-primario);
+  }
+}
+
+.cabecera-pagina {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+
+  h2 {
+    font-size: 20px;
+  }
+}
+
+.volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--c-texto-2);
+  font-weight: 500;
+  margin-bottom: 12px;
+
+  &:hover {
+    color: var(--c-azul);
+  }
+}
+
+.datos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px 24px;
+  margin: 0;
+
+  dt {
+    color: var(--c-texto-2);
+    font-size: 13px;
+  }
+
+  dd {
+    margin: 2px 0 0;
+    font-weight: 500;
+    overflow-wrap: anywhere;
+  }
+}
+
+/* Niveles de triage: colores convencionales (rojo, naranja, amarillo, verde, azul) */
+.triage {
+  display: inline-grid;
+  place-items: center;
+  min-width: 34px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 13px;
+  color: #fff;
+}
+
+.triage--1 { background: #dc2626; }
+.triage--2 { background: #ea580c; }
+.triage--3 { background: #ca8a04; }
+.triage--4 { background: #16a34a; }
+.triage--5 { background: #2563eb; }
+.triage--sin { background: var(--c-borde); color: var(--c-texto-2); }
 
 .campo__error {
   color: var(--c-critico);
@@ -205,6 +357,21 @@ a {
 .alerta--error {
   background: var(--c-critico-suave);
   color: #991b1b;
+}
+
+.alerta--aviso {
+  background: var(--c-alerta-suave);
+  color: #92400e;
+}
+
+.alerta--info {
+  background: var(--c-azul-suave);
+  color: #1e40af;
+}
+
+.alerta--exito {
+  background: var(--c-normal-suave);
+  color: #166534;
 }
 
 .chip {

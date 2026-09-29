@@ -1,0 +1,70 @@
+<div class="cabecera-pagina">
+  <h2>Pacientes en espera</h2>
+  <div class="acciones">
+    @if (actualizado(); as a) {
+      <span class="actualizado"><span class="icono">sync</span>Se actualiza sola · {{ a.toLocaleTimeString('es-CO') }}</span>
+    }
+    @if (auth.tieneRol('ADMISIONES')) {
+      <a class="btn btn--primario" routerLink="/pacientes"><span class="icono">how_to_reg</span>Admitir paciente</a>
+    }
+  </div>
+</div>
+
+@if (error()) {
+  <div class="alerta alerta--error" role="alert"><span class="icono">error</span>{{ error() }}</div>
+}
+
+<ng-template #tarjeta let-e>
+  <a class="paciente" [routerLink]="['/admisiones', e.id]" [class.paciente--demorado]="demorado(e)">
+    <span class="triage" [class]="'triage ' + (e.triage ? 'triage--' + e.triage.nivelAsignado : 'triage--sin')"
+      [attr.title]="e.triage?.descripcionNivel ?? 'Sin triage'">
+      {{ e.triage ? romano[e.triage.nivelAsignado] : '–' }}
+    </span>
+    <span class="paciente__datos">
+      <strong>{{ e.paciente.nombreCompleto }}</strong>
+      <span class="paciente__meta">
+        {{ e.paciente.edad !== null ? e.paciente.edad + ' años · ' : '' }}{{ e.tipoAtencionDescripcion }} · {{ e.numero }}
+      </span>
+      <span class="paciente__motivo">{{ e.triage?.sintomaPrincipal ?? e.motivoConsulta }}</span>
+      @if (e.pendientes.length && e.estado === 'EN_ADMISION') {
+        <span class="paciente__pendientes">
+          <span class="icono">checklist</span>Falta: {{ e.pendientes.length }} requisito{{ e.pendientes.length > 1 ? 's' : '' }}
+        </span>
+      }
+    </span>
+    <span class="paciente__espera" [class.paciente__espera--alerta]="demorado(e)">{{ espera(e) }}</span>
+  </a>
+</ng-template>
+
+@if (lista(); as l) {
+  <div class="columnas">
+    <section class="columna">
+      <h3><span class="icono">emergency</span>Pendientes de triage <span class="contador">{{ l.pendientesTriage.length }}</span></h3>
+      @for (e of l.pendientesTriage; track e.id) {
+        <ng-container [ngTemplateOutlet]="tarjeta" [ngTemplateOutletContext]="{ $implicit: e }" />
+      } @empty {
+        <p class="vacia">Nadie esperando triage.</p>
+      }
+    </section>
+
+    <section class="columna">
+      <h3><span class="icono">assignment</span>En admisión <span class="contador">{{ l.enAdmision.length }}</span></h3>
+      @for (e of l.enAdmision; track e.id) {
+        <ng-container [ngTemplateOutlet]="tarjeta" [ngTemplateOutletContext]="{ $implicit: e }" />
+      } @empty {
+        <p class="vacia">Sin admisiones en curso.</p>
+      }
+    </section>
+
+    <section class="columna columna--consulta">
+      <h3><span class="icono">stethoscope</span>Listos para consulta <span class="contador">{{ l.esperaConsulta.length }}</span></h3>
+      @for (e of l.esperaConsulta; track e.id) {
+        <ng-container [ngTemplateOutlet]="tarjeta" [ngTemplateOutletContext]="{ $implicit: e }" />
+      } @empty {
+        <p class="vacia">Nadie en espera de consulta.</p>
+      }
+    </section>
+  </div>
+} @else if (!error()) {
+  <p class="vacia">Cargando…</p>
+}

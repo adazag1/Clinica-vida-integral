@@ -1,0 +1,135 @@
+.actualizado {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--c-texto-2);
+  font-size: 13px;
+
+  .icono {
+    font-size: 18px;
+  }
+}
+
+.columnas {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.columna {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  background: #eef3f9;
+  border-radius: var(--radio);
+
+  h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    margin: 2px 4px 4px;
+
+    .icono {
+      font-size: 20px;
+      color: var(--c-azul);
+    }
+  }
+}
+
+.columna--consulta {
+  background: var(--c-primario-suave);
+
+  h3 .icono {
+    color: var(--c-primario-hover);
+  }
+}
+
+.contador {
+  margin-left: auto;
+  min-width: 26px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--c-superficie);
+  text-align: center;
+  font-size: 13px;
+}
+
+.paciente {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background: var(--c-superficie);
+  border: 1px solid var(--c-borde);
+  border-radius: var(--radio-sm);
+  color: inherit;
+  transition: border-color 0.15s, transform 0.15s;
+
+  &:hover {
+    border-color: var(--c-azul);
+    transform: translateY(-1px);
+  }
+}
+
+.paciente--demorado {
+  border-color: var(--c-critico);
+}
+
+.paciente__datos {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.paciente__meta {
+  color: var(--c-texto-2);
+  font-size: 12px;
+}
+
+.paciente__motivo {
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.paciente__pendientes {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--c-alerta);
+  font-size: 12px;
+  font-weight: 600;
+
+  .icono {
+    font-size: 16px;
+  }
+}
+
+.paciente__espera {
+  white-space: nowrap;
+  color: var(--c-texto-2);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.paciente__espera--alerta {
+  color: var(--c-critico);
+}
+
+.vacia {
+  margin: 4px;
+  color: var(--c-texto-2);
+  font-size: 13px;
+}
+
+@media (max-width: 1100px) {
+  .columnas {
+    grid-template-columns: 1fr;
+  }
+}

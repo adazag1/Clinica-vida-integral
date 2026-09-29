@@ -1,0 +1,73 @@
+.signos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  column-gap: 14px;
+}
+
+.unidad {
+  color: var(--c-texto-3);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* Quita las flechas del input numérico: ocupan espacio y se prestan a cambios accidentales */
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+}
+
+.sin-sugerencia {
+  display: block;
+  margin: -6px 0 18px;
+}
+
+.sugerencia {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+  border-radius: var(--radio-sm);
+  border: 1px solid var(--c-borde);
+  background: #f8fafd;
+
+  .triage {
+    min-width: 44px;
+    height: 36px;
+    font-size: 16px;
+  }
+
+  ul {
+    margin: 6px 0 0;
+    padding-left: 18px;
+  }
+}
+
+.sugerencia--1 { border-color: #fca5a5; background: #fef2f2; }
+.sugerencia--2 { border-color: #fdba74; background: #fff7ed; }
+.sugerencia--3 { border-color: #fde68a; background: #fefce8; }
+
+.sugerencia__advertencia {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin: 8px 0 0;
+  color: #92400e;
+  font-weight: 500;
+
+  .icono {
+    font-size: 18px;
+  }
+}
+
+.sugerencia__nota {
+  margin: 8px 0 0;
+  color: var(--c-texto-2);
+  font-size: 13px;
+}

@@ -1,0 +1,33 @@
+.busqueda__pie {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.resultados {
+  margin-top: 16px;
+}
+
+.resultados__total {
+  margin: 0 0 12px;
+  color: var(--c-texto-2);
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.vacio {
+  color: var(--c-texto-2);
+  margin: 8px 0;
+}
+
+.paginacion {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}

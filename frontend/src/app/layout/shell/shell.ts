@@ -46,7 +46,15 @@ export class Shell {
       .toUpperCase(),
   );
 
+  protected readonly puedeBuscarPacientes = computed(() => this.modulos().some((m) => m.ruta === 'pacientes'));
+
   protected cerrarMenu(): void {
     this.menuAbierto.set(false);
+  }
+
+  protected buscarPaciente(texto: string): void {
+    if (texto.trim()) {
+      this.router.navigate(['/pacientes'], { queryParams: { texto: texto.trim() } });
+    }
   }
 }

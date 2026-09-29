@@ -1,0 +1,131 @@
+<div class="cabecera-pagina">
+  <h2>Pacientes</h2>
+  @if (auth.tieneRol('ADMISIONES')) {
+    <a class="btn btn--primario" routerLink="/pacientes/nuevo">
+      <span class="icono">person_add</span>
+      Nuevo paciente
+    </a>
+  }
+</div>
+
+<section class="tarjeta">
+  <form (ngSubmit)="buscar(0)">
+    @if (!avanzada()) {
+      <div class="campo">
+        <label for="texto">Buscar por documento, nombre o teléfono</label>
+        <div class="campo__control">
+          <span class="icono">search</span>
+          <input id="texto" name="texto" [(ngModel)]="filtros.texto" placeholder="Ej.: 1020345678 o Juan Pérez" autocomplete="off" />
+        </div>
+      </div>
+    } @else {
+      <div class="rejilla">
+        <div class="campo">
+          <label for="documento">Número de documento</label>
+          <div class="campo__control">
+            <input id="documento" name="documento" [(ngModel)]="filtros.documento" autocomplete="off" />
+          </div>
+        </div>
+        <div class="campo">
+          <label for="nombre">Nombre o apellidos</label>
+          <div class="campo__control">
+            <input id="nombre" name="nombre" [(ngModel)]="filtros.nombre" autocomplete="off" />
+          </div>
+        </div>
+        <div class="campo">
+          <label for="fechaNacimiento">Fecha de nacimiento</label>
+          <div class="campo__control">
+            <input id="fechaNacimiento" name="fechaNacimiento" type="date" [(ngModel)]="filtros.fechaNacimiento" />
+          </div>
+        </div>
+        <div class="campo">
+          <label for="telefono">Teléfono</label>
+          <div class="campo__control">
+            <input id="telefono" name="telefono" [(ngModel)]="filtros.telefono" autocomplete="off" />
+          </div>
+        </div>
+      </div>
+    }
+
+    <div class="busqueda__pie">
+      <button type="button" class="enlace" (click)="cambiarModo()">
+        {{ avanzada() ? 'Búsqueda simple' : 'Búsqueda avanzada por varios criterios' }}
+      </button>
+      <div class="acciones">
+        @if (resultados() !== null) {
+          <button type="button" class="btn btn--secundario" (click)="limpiar()">Limpiar</button>
+        }
+        <button type="submit" class="btn btn--primario" [disabled]="cargando()">
+          <span class="icono">search</span>
+          {{ cargando() ? 'Buscando…' : 'Buscar' }}
+        </button>
+      </div>
+    </div>
+  </form>
+</section>
+
+@if (error()) {
+  <div class="alerta alerta--error resultados" role="alert"><span class="icono">error</span>{{ error() }}</div>
+}
+
+@if (resultados(); as lista) {
+  <section class="tarjeta resultados">
+    <p class="resultados__total">
+      {{ total() === 1 ? '1 paciente encontrado' : total() + ' pacientes encontrados' }}
+    </p>
+
+    @if (lista.length) {
+      <div class="tabla-contenedor">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th>Documento</th>
+              <th>Nombre</th>
+              <th>Nacimiento</th>
+              <th>Teléfono</th>
+              <th>Aseguradora</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of lista; track p.id) {
+              <tr>
+                <td class="nowrap">
+                  @if (p.identificacionTemporal) {
+                    <span class="chip chip--alerta">{{ p.numeroDocumento }}</span>
+                  } @else {
+                    {{ p.tipoDocumento }} {{ p.numeroDocumento }}
+                  }
+                </td>
+                <td><a [routerLink]="['/pacientes', p.id]">{{ p.nombreCompleto }}</a></td>
+                <td class="nowrap">
+                  {{ p.fechaNacimiento ? (p.fechaNacimiento | date: 'dd/MM/yyyy') + ' (' + p.edad + ' años)' : '—' }}
+                </td>
+                <td>{{ p.telefono ?? '—' }}</td>
+                <td>{{ p.aseguradora ?? '—' }}</td>
+                <td><a class="btn btn--secundario btn--pequeno" [routerLink]="['/pacientes', p.id]">Ver</a></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <p class="vacio">
+        No hay pacientes con esos datos.
+        @if (auth.tieneRol('ADMISIONES')) {
+          <a routerLink="/pacientes/nuevo">Registrar un paciente nuevo</a>
+        }
+      </p>
+    }
+
+    @if (totalPaginas() > 1) {
+      <div class="paginacion">
+        <button class="btn btn--secundario btn--pequeno" [disabled]="pagina() === 0" (click)="buscar(pagina() - 1)">Anterior</button>
+        <span>Página {{ pagina() + 1 }} de {{ totalPaginas() }}</span>
+        <button class="btn btn--secundario btn--pequeno" [disabled]="pagina() + 1 >= totalPaginas()" (click)="buscar(pagina() + 1)">
+          Siguiente
+        </button>
+      </div>
+    }
+  </section>
+}

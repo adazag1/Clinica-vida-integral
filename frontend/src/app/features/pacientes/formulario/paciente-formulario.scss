@@ -1,0 +1,81 @@
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 980px;
+}
+
+.sin-documento {
+  margin-bottom: 16px;
+}
+
+.campo--final {
+  margin-bottom: 0;
+}
+
+.cargando {
+  color: var(--c-texto-2);
+}
+
+.duplicados {
+  border-color: #f5cf8f;
+  background: #fffbf3;
+}
+
+.duplicados__titulo {
+  color: #92400e;
+}
+
+.duplicados__texto {
+  margin: -6px 0 12px;
+  color: var(--c-texto-2);
+}
+
+.duplicados__lista {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--c-superficie);
+    border: 1px solid var(--c-borde);
+    border-radius: var(--radio-sm);
+  }
+
+  a {
+    font-weight: 600;
+  }
+}
+
+.duplicados__doc {
+  margin-left: 8px;
+  color: var(--c-texto-2);
+  font-size: 13px;
+}
+
+.duplicados__coincidencias {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.duplicados__puntaje {
+  font-size: 18px;
+  font-weight: 700;
+  color: #92400e;
+  white-space: nowrap;
+
+  small {
+    font-size: 12px;
+    font-weight: 500;
+  }
+}
