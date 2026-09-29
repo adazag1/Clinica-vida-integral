@@ -1,0 +1,130 @@
+<div class="panel__cabecera">
+  <h3>Nueva cita</h3>
+  <button type="button" class="panel__cerrar" (click)="cerrar.emit()" aria-label="Cerrar"><span class="icono">close</span></button>
+</div>
+
+<form [formGroup]="form" (ngSubmit)="agendar()" novalidate>
+  <section class="paso">
+    <h4><span class="paso__num">1</span>Paciente</h4>
+    @if (pacienteElegido(); as p) {
+      <div class="paciente">
+        <span class="icono">person</span>
+        <div>
+          <strong>{{ p.nombreCompleto }}</strong>
+          <span>{{ p.tipoDocumento }} {{ p.numeroDocumento }}{{ p.edad !== null ? ' · ' + p.edad + ' años' : '' }}</span>
+          <span>{{ p.aseguradora ?? 'Particular' }}{{ p.telefono ? ' · ' + p.telefono : '' }}</span>
+        </div>
+        <button type="button" class="enlace" (click)="pacienteElegido.set(null)">Cambiar</button>
+      </div>
+    } @else {
+      <div class="campo">
+        <div class="campo__control">
+          <span class="icono">search</span>
+          <input formControlName="busqueda" placeholder="Documento, nombre o teléfono" autocomplete="off" aria-label="Buscar paciente" />
+        </div>
+        <span class="campo__ayuda">
+          Escriba al menos 3 caracteres. ¿No existe? <a routerLink="/pacientes/nuevo" target="_blank">Registrar paciente</a>
+        </span>
+      </div>
+      @if (resultados().length) {
+        <ul class="resultados">
+          @for (r of resultados(); track r.id) {
+            <li>
+              <button type="button" (click)="elegirPaciente(r)">
+                <strong>{{ r.nombreCompleto }}</strong>
+                <span>{{ r.tipoDocumento }} {{ r.numeroDocumento }}{{ r.fechaNacimiento ? ' · ' + (r.fechaNacimiento | date: 'dd/MM/yyyy') : '' }}</span>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    }
+  </section>
+
+  <section class="paso">
+    <h4><span class="paso__num">2</span>Tipo de cita</h4>
+    <div class="rejilla-2">
+      <div class="campo">
+        <label for="tipoCita">Tipo</label>
+        <div class="campo__control">
+          <select id="tipoCita" formControlName="tipoCitaId">
+            @for (t of catalogos().tipos; track t.id) {
+              <option [ngValue]="t.id">{{ t.nombre }} ({{ t.duracionMinutos }} min)</option>
+            }
+          </select>
+        </div>
+      </div>
+      <div class="campo">
+        <label for="prioridad">Prioridad</label>
+        <div class="campo__control">
+          <select id="prioridad" formControlName="prioridad">
+            @for (p of prioridades; track p.valor) {
+              <option [value]="p.valor">{{ p.etiqueta }}</option>
+            }
+          </select>
+        </div>
+      </div>
+      <div class="campo">
+        <label for="especialidad">Especialidad</label>
+        <div class="campo__control">
+          <select id="especialidad" formControlName="especialidadId">
+            <option [ngValue]="0">Todas</option>
+            @for (e of catalogos().especialidades; track e.id) {
+              <option [ngValue]="e.id">{{ e.nombre }}</option>
+            }
+          </select>
+        </div>
+      </div>
+      <div class="campo">
+        <label for="profesional">Profesional</label>
+        <div class="campo__control">
+          <select id="profesional" formControlName="profesionalId">
+            <option [ngValue]="0">Cualquiera</option>
+            @for (p of profesionalesFiltrados(); track p.id) {
+              <option [ngValue]="p.id">{{ p.nombre }}</option>
+            }
+          </select>
+        </div>
+      </div>
+    </div>
+    @if (tipo()?.requierePreparacion) {
+      <div class="alerta alerta--aviso"><span class="icono">info</span>
+        <span>Requiere preparación: {{ tipo()?.instruccionesPreparacion }} Se avisará al área correspondiente.</span>
+      </div>
+    }
+  </section>
+
+  <section class="paso">
+    <h4><span class="paso__num">3</span>Horario</h4>
+    @if (cupo(); as c) {
+      <p class="elegido"><span class="icono">event_available</span>
+        {{ c.inicio | date: "EEEE d 'de' MMMM, h:mm a" }} · {{ c.profesional }}
+        @if (c.reservado) { <span class="chip chip--alerta">Cupo reservado</span> }
+      </p>
+    }
+    <app-selector-cupo [tipoCitaId]="+form.controls.tipoCitaId.value || null" [prioridad]="form.controls.prioridad.value"
+      [profesionalId]="profesionalId()" [especialidadId]="especialidadId()" [fechaInicial]="fechaInicial() || hoy"
+      [seleccion]="cupo()" (elegido)="elegirCupo($event)" />
+  </section>
+
+  <div class="campo">
+    <label for="motivoCita">Motivo (opcional)</label>
+    <div class="campo__control"><input id="motivoCita" formControlName="motivo" autocomplete="off" /></div>
+  </div>
+
+  @if (aviso()) {
+    <div class="alerta alerta--exito" role="status"><span class="icono">check_circle</span>{{ aviso() }}</div>
+  }
+  @if (error()) {
+    <div class="alerta alerta--error" role="alert"><span class="icono">error</span>{{ error() }}</div>
+  }
+
+  <div class="acciones">
+    <button type="button" class="btn btn--secundario" (click)="listaEspera()" [disabled]="guardando() || !pacienteElegido()">
+      <span class="icono">hourglass_top</span>Lista de espera
+    </button>
+    <button type="submit" class="btn btn--primario" [disabled]="guardando() || !pacienteElegido() || !cupo()">
+      <span class="icono">event_available</span>{{ guardando() ? 'Agendando…' : 'Agendar cita' }}
+    </button>
+  </div>
+</form>

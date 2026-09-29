@@ -1,0 +1,198 @@
+@if (indicadores(); as k) {
+  <section class="indicadores" aria-label="Indicadores del día">
+    <div class="tarjeta kpi">
+      <span class="kpi__icono kpi__icono--primario"><span class="icono">calendar_month</span></span>
+      <div><span>Citas del día</span><strong>{{ k.citas }}</strong></div>
+    </div>
+    <div class="tarjeta kpi">
+      <span class="kpi__icono kpi__icono--azul"><span class="icono">task_alt</span></span>
+      <div><span>Confirmadas</span><strong>{{ k.confirmadas }}</strong>
+        <small>{{ k.citas ? ((k.confirmadas / k.citas) * 100 | number: '1.0-0') + ' % del total' : '—' }}</small></div>
+    </div>
+    <a class="tarjeta kpi" routerLink="/agenda/lista-espera">
+      <span class="kpi__icono kpi__icono--alerta"><span class="icono">hourglass_top</span></span>
+      <div><span>En lista de espera</span><strong>{{ k.enListaEspera }}</strong><small>Ver lista</small></div>
+    </a>
+    <div class="tarjeta kpi">
+      <span class="kpi__icono kpi__icono--critico"><span class="icono">event_busy</span></span>
+      <div><span>Canceladas</span><strong>{{ k.canceladas }}</strong></div>
+    </div>
+    <div class="tarjeta kpi">
+      <span class="kpi__icono kpi__icono--normal"><span class="icono">how_to_reg</span></span>
+      <div><span>Asistencia</span><strong>{{ k.asistencia === null ? '—' : (k.asistencia | number: '1.0-0') + ' %' }}</strong>
+        <small>{{ k.asistencia === null ? 'Sin registros aún' : 'De las citas con asistencia registrada' }}</small></div>
+    </div>
+  </section>
+}
+
+@if (error()) {
+  <div class="alerta alerta--error" role="alert"><span class="icono">error</span>{{ error() }}</div>
+}
+
+<div class="agenda" [class.agenda--con-panel]="seleccion()">
+  <aside class="tarjeta filtros">
+    <div class="filtros__cabecera">
+      <h3>Filtros</h3>
+      <button type="button" class="enlace" (click)="limpiarFiltros()"><span class="icono">filter_alt_off</span>Limpiar</button>
+    </div>
+    @if (catalogos(); as c) {
+      <div class="campo">
+        <label for="fSede">Sede</label>
+        <div class="campo__control">
+          <select id="fSede" [(ngModel)]="filtros.sedeId" (ngModelChange)="filtros.profesionalId = 0; cargar()">
+            <option [ngValue]="0">Todas</option>
+            @for (s of c.sedes; track s.id) { <option [ngValue]="s.id">{{ s.nombre }}</option> }
+          </select>
+        </div>
+      </div>
+      <div class="campo">
+        <label for="fEsp">Especialidad</label>
+        <div class="campo__control">
+          <select id="fEsp" [(ngModel)]="filtros.especialidadId" (ngModelChange)="filtros.profesionalId = 0; cargar()">
+            <option [ngValue]="0">Todas</option>
+            @for (e of c.especialidades; track e.id) { <option [ngValue]="e.id">{{ e.nombre }}</option> }
+          </select>
+        </div>
+      </div>
+      <div class="campo">
+        <label for="fProf">Profesional</label>
+        <div class="campo__control">
+          <select id="fProf" [(ngModel)]="filtros.profesionalId" (ngModelChange)="cargar()">
+            <option [ngValue]="0">Todos</option>
+            @for (p of profesionalesFiltro(); track p.id) {
+              <option [ngValue]="p.id">{{ p.nombre }}{{ p.id === c.miProfesionalId ? ' (mi agenda)' : '' }}</option>
+            }
+          </select>
+        </div>
+      </div>
+      <div class="campo">
+        <label for="fEstado">Estado de cita</label>
+        <div class="campo__control">
+          <select id="fEstado" [(ngModel)]="filtros.estado">
+            <option value="">Todos</option>
+            @for (e of estados; track e.valor) { <option [value]="e.valor">{{ e.etiqueta }}</option> }
+          </select>
+        </div>
+      </div>
+      <div class="campo">
+        <label for="fTipo">Tipo de consulta</label>
+        <div class="campo__control">
+          <select id="fTipo" [(ngModel)]="filtros.tipoCitaId">
+            <option [ngValue]="0">Todos</option>
+            @for (t of c.tipos; track t.id) { <option [ngValue]="t.id">{{ t.nombre }}</option> }
+          </select>
+        </div>
+      </div>
+      <label class="check canceladas"><input type="checkbox" [(ngModel)]="filtros.canceladas" /> Mostrar canceladas</label>
+    }
+    <app-mini-calendario [fecha]="fecha()" (elegida)="irA($event)" />
+    <div class="filtros__enlaces">
+      <a routerLink="/agenda/lista-espera"><span class="icono">hourglass_top</span>Lista de espera</a>
+      @if (esCoordinacion()) {
+        <a routerLink="/agenda/configuracion"><span class="icono">tune</span>Horarios y bloqueos</a>
+      }
+    </div>
+  </aside>
+
+  <section class="tarjeta dia">
+    <div class="dia__barra">
+      <div class="dia__nav">
+        <button type="button" class="btn btn--secundario btn--pequeno" (click)="moverDia(-1)" aria-label="Día anterior">
+          <span class="icono">chevron_left</span></button>
+        <button type="button" class="btn btn--secundario btn--pequeno" (click)="moverDia(1)" aria-label="Día siguiente">
+          <span class="icono">chevron_right</span></button>
+        <button type="button" class="btn btn--secundario btn--pequeno" (click)="irA(hoy())" [disabled]="esHoy()">Hoy</button>
+      </div>
+      <h2 class="dia__fecha"><span class="icono">calendar_today</span>{{ fechaDate() | date: "EEEE, d 'de' MMMM 'de' yyyy" }}</h2>
+      @if (puedeAgendar()) {
+        <button type="button" class="btn btn--primario" (click)="nuevaCita(filtros.profesionalId || null)">
+          <span class="icono">add</span>Nueva cita
+        </button>
+      }
+    </div>
+
+    @if (dia(); as d) {
+      @if (!d.profesionales.length) {
+        <p class="vacio">No hay profesionales con agenda para estos filtros.</p>
+      } @else {
+        <div class="grilla-contenedor">
+          <div class="grilla" [style.grid-template-columns]="'64px repeat(' + d.profesionales.length + ', minmax(170px, 1fr))'">
+            <div class="grilla__esquina"></div>
+            @for (col of d.profesionales; track col.profesional.id) {
+              <div class="grilla__cabecera">
+                <span class="avatar">{{ col.profesional.nombre.replace('Dr. ', '').replace('Dra. ', '').charAt(0) }}</span>
+                <div>
+                  <strong>{{ col.profesional.nombre }}</strong>
+                  <span>{{ col.profesional.especialidad }}</span>
+                  <span>{{ col.profesional.consultorio }}</span>
+                  @if (ocupacion(col.profesional.id); as o) {
+                    <span class="ocupacion" [title]="'Ocupación del día: ' + (o | number: '1.0-0') + ' %'">
+                      <span class="ocupacion__barra"><span [style.width.%]="o"></span></span>{{ o | number: '1.0-0' }} %
+                    </span>
+                  }
+                </div>
+              </div>
+            }
+
+            <div class="grilla__horas" [style.height.px]="altoGrilla()">
+              @for (h of horas(); track h) {
+                <span [style.top.px]="topHora(h)">{{ h > 12 ? h - 12 : h }} {{ h < 12 ? 'a. m.' : 'p. m.' }}</span>
+              }
+            </div>
+
+            @for (col of d.profesionales; track col.profesional.id) {
+              <div class="columna" [style.height.px]="altoGrilla()" [style.background-size]="'100% ' + pxHora + 'px'">
+                @for (f of col.franjas; track f.inicio) {
+                  <button type="button" class="franja" [class.franja--reservada]="f.reservada"
+                    [style.top.px]="top(f.inicio)" [style.height.px]="alto(f.inicio, f.fin)"
+                    [disabled]="!puedeAgendar()" (click)="nuevaCita(col.profesional.id)"
+                    [attr.aria-label]="'Agendar con ' + col.profesional.nombre"
+                    [title]="f.reservada ? 'Franja reservada para citas prioritarias y urgentes' : 'Clic para agendar'">
+                    @if (f.reservada) { <span class="franja__etiqueta">Reservado prioridades</span> }
+                  </button>
+                }
+                @for (b of col.bloqueos; track b.id) {
+                  <div class="bloqueo" [style.top.px]="top(b.inicio)" [style.height.px]="alto(b.inicio, b.fin)">
+                    <strong>Bloqueo</strong><span>{{ b.motivoDescripcion }}{{ b.descripcion ? ' · ' + b.descripcion : '' }}</span>
+                  </div>
+                }
+                @for (c of citasVisibles(col); track c.id) {
+                  <button type="button" [class]="claseCita(c)" [class.cita--activa]="seleccionadaId() === c.id"
+                    [style.top.px]="top(c.inicio)" [style.height.px]="alto(c.inicio, c.fin)" (click)="verCita(c)">
+                    <span class="cita__hora">{{ c.inicio | date: 'h:mm' }} – {{ c.fin | date: 'h:mm a' }}</span>
+                    <strong>{{ c.paciente.nombreCompleto }}</strong>
+                    <span class="cita__tipo">{{ c.tipo.nombre }}{{ c.prioridad !== 'NORMAL' ? ' · ' + c.prioridadDescripcion : '' }}</span>
+                    <span class="icono cita__estado" [title]="c.estadoDescripcion">{{ iconoEstado(c.estado) }}</span>
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        </div>
+        <p class="leyenda">
+          <span><i class="muestra muestra--programada"></i>Programada</span>
+          <span><i class="muestra muestra--confirmada"></i>Confirmada</span>
+          <span><i class="muestra muestra--atendida"></i>Atendida</span>
+          <span><i class="muestra muestra--reservada"></i>Reservado prioridades</span>
+          <span><i class="muestra muestra--bloqueo"></i>Bloqueo</span>
+        </p>
+      }
+    } @else if (cargando()) {
+      <p class="vacio">Cargando agenda…</p>
+    }
+  </section>
+
+  @if (seleccion(); as s) {
+    <aside class="tarjeta panel">
+      @if (s.tipo === 'cita') {
+        <app-detalle-cita [cita]="s.cita" (cambio)="citaCambio($event)" (cerrar)="cerrarPanel()" />
+      } @else if (catalogos(); as c) {
+        <!-- Cada nueva selección crea el formulario de cero (p. ej. al hacer clic en otra columna) -->
+        @for (n of [s]; track n) {
+          <app-nueva-cita [catalogos]="c" [profesionalInicial]="s.profesionalId" [fechaInicial]="s.fecha"
+            [paciente]="s.paciente" (creada)="citaCreada($event)" (cerrar)="cerrarPanel()" />
+        }
+      }
+    </aside>
+  }
+</div>

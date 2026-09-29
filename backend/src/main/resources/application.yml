@@ -41,3 +41,10 @@ app:
     origenes-permitidos: ${CORS_ORIGINS:http://localhost:4200}
   seguridad:
     max-intentos-fallidos: 5
+  # Las franjas de atención y los días de la agenda se interpretan en la hora local de la clínica
+  zona-horaria: America/Bogota
+  # Dirección del frontend, para los enlaces de confirmación que recibe el paciente (RFAGE-010)
+  frontend-url: ${FRONTEND_URL:http://localhost:4200}
+  recordatorios:
+    # Cuántas horas antes de la cita se envía el recordatorio (RFAGE-009)
+    horas-antes: 24

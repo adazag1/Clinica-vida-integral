@@ -14,8 +14,10 @@ import co.edu.ucentral.clinica.admisiones.dto.TriageRequest;
 import co.edu.ucentral.clinica.comun.excepciones.DatosInvalidosException;
 import co.edu.ucentral.clinica.comun.excepciones.RecursoNoEncontradoException;
 import co.edu.ucentral.clinica.comun.excepciones.ReglaNegocioException;
+import co.edu.ucentral.clinica.notificaciones.NotificacionService;
 import co.edu.ucentral.clinica.pacientes.Paciente;
 import co.edu.ucentral.clinica.pacientes.PacienteService;
+import co.edu.ucentral.clinica.seguridad.Rol;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,16 +49,19 @@ public class EpisodioService {
     private final PacienteService pacienteService;
     private final CalculadoraTriage calculadora;
     private final AuditorAware<String> auditor;
+    private final NotificacionService notificaciones;
 
     public EpisodioService(EpisodioRepository episodios, TriageRepository triages,
                            ConsentimientoRepository consentimientos, PacienteService pacienteService,
-                           CalculadoraTriage calculadora, AuditorAware<String> auditor) {
+                           CalculadoraTriage calculadora, AuditorAware<String> auditor,
+                           NotificacionService notificaciones) {
         this.episodios = episodios;
         this.triages = triages;
         this.consentimientos = consentimientos;
         this.pacienteService = pacienteService;
         this.calculadora = calculadora;
         this.auditor = auditor;
+        this.notificaciones = notificaciones;
     }
 
     /** RFADM-004: genera el número de atención y activa el flujo según el tipo de atención. */
@@ -162,6 +167,10 @@ public class EpisodioService {
                     + actual.pendientes().stream().map(Pendiente::mensaje).collect(Collectors.joining("; ")) + ".");
         }
         episodio.marcarListoParaConsulta();
+        String nivel = actual.triage() == null ? "" : " · Triage " + NivelTriage.descripcion(actual.triage().nivelAsignado());
+        notificaciones.paraRol(Rol.MEDICO, "Paciente listo para consulta",
+                episodio.getPaciente().getNombreCompleto() + " · " + episodio.getTipoAtencion().getDescripcion() + nivel,
+                "/admisiones/" + episodio.getId());
         return armar(episodio);
     }
 

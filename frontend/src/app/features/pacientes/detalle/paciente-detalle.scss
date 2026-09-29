@@ -77,6 +77,17 @@
   color: var(--c-primario-hover);
 }
 
+.titulo-con-accion {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+small {
+  color: var(--c-texto-2);
+}
+
 .nowrap {
   white-space: nowrap;
 }

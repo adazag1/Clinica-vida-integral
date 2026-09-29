@@ -1,0 +1,140 @@
+/* Estilos compartidos por los paneles laterales de la agenda (nueva cita y detalle de cita) */
+:host {
+  display: block;
+}
+
+.panel__cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+
+  h3 {
+    font-size: 17px;
+  }
+}
+
+.panel__cerrar {
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: var(--c-texto-2);
+  display: grid;
+  place-items: center;
+}
+
+.paso {
+  margin-bottom: 18px;
+
+  h4 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    margin: 0 0 10px;
+  }
+}
+
+.paso__num {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--c-primario);
+  color: #fff;
+  font-size: 12px;
+}
+
+.rejilla-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  column-gap: 12px;
+
+  .campo {
+    margin-bottom: 12px;
+  }
+}
+
+.paciente {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px;
+  border: 1px solid var(--c-borde);
+  border-radius: var(--radio-sm);
+  background: #f8fafd;
+
+  > .icono {
+    color: var(--c-azul);
+  }
+
+  > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+
+    span {
+      color: var(--c-texto-2);
+      font-size: 13px;
+    }
+  }
+}
+
+.resultados {
+  list-style: none;
+  margin: -10px 0 0;
+  padding: 0;
+  border: 1px solid var(--c-borde);
+  border-radius: var(--radio-sm);
+  overflow: hidden;
+
+  button {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+    padding: 10px 12px;
+    border: 0;
+    border-bottom: 1px solid var(--c-borde);
+    background: var(--c-superficie);
+    text-align: left;
+    font: inherit;
+    cursor: pointer;
+
+    span {
+      color: var(--c-texto-2);
+      font-size: 13px;
+    }
+
+    &:hover {
+      background: var(--c-azul-suave);
+    }
+  }
+
+  li:last-child button {
+    border-bottom: 0;
+  }
+}
+
+.elegido {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 12px;
+  margin: 0 0 12px;
+  border-radius: var(--radio-sm);
+  background: var(--c-primario-suave);
+  color: var(--c-primario-hover);
+  font-weight: 600;
+
+  &::first-letter {
+    text-transform: uppercase;
+  }
+}
+
+.alerta {
+  margin-bottom: 14px;
+}

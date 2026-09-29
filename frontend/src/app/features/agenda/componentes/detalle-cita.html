@@ -1,0 +1,151 @@
+<div class="panel__cabecera">
+  <h3>Cita seleccionada</h3>
+  <span class="acciones-cabecera">
+    <span class="chip" [class]="'chip ' + claseEstado(cita().estado)">{{ cita().estadoDescripcion }}</span>
+    <button type="button" class="panel__cerrar" (click)="cerrar.emit()" aria-label="Cerrar"><span class="icono">close</span></button>
+  </span>
+</div>
+
+@let c = cita();
+
+<div class="paciente">
+  <span class="icono">person</span>
+  <div>
+    <strong>{{ c.paciente.nombreCompleto }}</strong>
+    <span>{{ c.paciente.tipoDocumento }} {{ c.paciente.numeroDocumento }}{{ c.paciente.edad !== null ? ' · ' + c.paciente.edad + ' años' : '' }}</span>
+    @if (c.paciente.telefono) {
+      <span>Tel. {{ c.paciente.telefono }}</span>
+    }
+  </div>
+</div>
+
+<dl class="lista">
+  <div><span class="icono">calendar_today</span><dt>Fecha</dt>
+    <dd class="capital">{{ c.inicio | date: "EEEE d 'de' MMMM" }}<br />{{ c.inicio | date: 'h:mm a' }} – {{ c.fin | date: 'h:mm a' }} ({{ c.tipo.duracionMinutos }} min)</dd></div>
+  <div><span class="icono">stethoscope</span><dt>Profesional</dt><dd>{{ c.profesional.nombre }}<br /><small>{{ c.profesional.especialidad }}</small></dd></div>
+  <div><span class="icono">location_on</span><dt>Lugar</dt><dd>{{ c.profesional.sede }}{{ c.profesional.consultorio ? ' · ' + c.profesional.consultorio : '' }}</dd></div>
+  <div><span class="icono">assignment</span><dt>Tipo de consulta</dt><dd>{{ c.tipo.nombre }}
+    @if (c.prioridad !== 'NORMAL') { <span class="chip chip--alerta">{{ c.prioridadDescripcion }}</span> }</dd></div>
+  <div><span class="icono">verified_user</span><dt>Aseguradora</dt><dd>{{ c.paciente.aseguradora ?? 'Particular' }}</dd></div>
+  @if (c.motivo) {
+    <div><span class="icono">notes</span><dt>Motivo</dt><dd>{{ c.motivo }}</dd></div>
+  }
+  @if (c.motivoCancelacionDescripcion) {
+    <div><span class="icono">cancel</span><dt>Cancelación</dt><dd>{{ c.motivoCancelacionDescripcion }}{{ c.detalleCancelacion ? ': ' + c.detalleCancelacion : '' }}</dd></div>
+  }
+</dl>
+
+@if (c.tipo.requierePreparacion) {
+  <div class="alerta alerta--aviso"><span class="icono">info</span><span>Preparación: {{ c.tipo.instruccionesPreparacion }}</span></div>
+}
+@if (aviso()) {
+  <div class="alerta alerta--exito" role="status"><span class="icono">check_circle</span>{{ aviso() }}</div>
+}
+@if (error()) {
+  <div class="alerta alerta--error" role="alert"><span class="icono">error</span>{{ error() }}</div>
+}
+
+@switch (modo()) {
+  @case ('cancelar') {
+    <div class="formulario">
+      <div class="campo">
+        <label for="motivoCancelacion">Motivo de la cancelación</label>
+        <div class="campo__control">
+          <select id="motivoCancelacion" [(ngModel)]="motivoCancelacion">
+            @for (m of motivos; track m.valor) {
+              <option [value]="m.valor">{{ m.etiqueta }}</option>
+            }
+          </select>
+        </div>
+      </div>
+      <div class="campo">
+        <label for="detalleCancelacion">Detalle (opcional)</label>
+        <div class="campo__control"><input id="detalleCancelacion" [(ngModel)]="detalle" /></div>
+      </div>
+      <div class="acciones">
+        <button type="button" class="btn btn--secundario" (click)="cambiarModo('ver')">Volver</button>
+        <button type="button" class="btn btn--peligro" (click)="cancelar()" [disabled]="ocupado()">Cancelar cita</button>
+      </div>
+    </div>
+  }
+  @case ('reprogramar') {
+    <div class="formulario">
+      <app-selector-cupo [tipoCitaId]="c.tipo.id" [prioridad]="c.prioridad" [profesionalId]="c.profesional.id"
+        [fechaInicial]="fechaCita()" [seleccion]="nuevoCupo()" (elegido)="nuevoCupo.set($event)" />
+      <div class="campo">
+        <label for="detalleReprogramacion">Motivo (opcional)</label>
+        <div class="campo__control"><input id="detalleReprogramacion" [(ngModel)]="detalle" /></div>
+      </div>
+      <div class="acciones">
+        <button type="button" class="btn btn--secundario" (click)="cambiarModo('ver')">Volver</button>
+        <button type="button" class="btn btn--primario" (click)="reprogramar()" [disabled]="ocupado() || !nuevoCupo()">
+          Reprogramar
+        </button>
+      </div>
+    </div>
+  }
+  @default {
+    <div class="botones">
+      <a class="btn btn--primario btn--bloque" [routerLink]="['/pacientes', c.paciente.id]">
+        <span class="icono">folder_shared</span>Ver paciente
+      </a>
+      @if (puedeEditar() && pendiente()) {
+        @if (c.estado === 'PROGRAMADA') {
+          <button type="button" class="btn btn--secundario btn--bloque" (click)="confirmar()" [disabled]="ocupado()">
+            <span class="icono">task_alt</span>Confirmar
+          </button>
+        }
+        @if (futura()) {
+          <button type="button" class="btn btn--secundario btn--bloque" (click)="cambiarModo('reprogramar')">
+            <span class="icono">event_repeat</span>Reprogramar
+          </button>
+          <button type="button" class="btn btn--secundario btn--bloque" (click)="cambiarModo('cancelar')">
+            <span class="icono">cancel</span>Cancelar cita
+          </button>
+          <button type="button" class="btn btn--secundario btn--bloque" (click)="recordatorio()" [disabled]="ocupado()">
+            <span class="icono">notifications</span>Enviar recordatorio
+          </button>
+        }
+      }
+      @if (puedeAsistencia()) {
+        <div class="asistencia">
+          <button type="button" class="btn btn--secundario" (click)="asistencia(true)" [disabled]="ocupado()">
+            <span class="icono">how_to_reg</span>Asistió</button>
+          <button type="button" class="btn btn--peligro" (click)="asistencia(false)" [disabled]="ocupado()">
+            <span class="icono">person_off</span>No asistió</button>
+        </div>
+      }
+      @if (c.enlacePaciente && pendiente() && futura()) {
+        <button type="button" class="enlace copiar" (click)="copiarEnlace()">
+          <span class="icono">{{ copiado() ? 'check' : 'link' }}</span>
+          {{ copiado() ? 'Enlace copiado' : 'Copiar enlace de confirmación para el paciente' }}
+        </button>
+      }
+    </div>
+  }
+}
+
+@if (c.recordatorios.length) {
+  <h4 class="subtitulo">Recordatorios</h4>
+  <ul class="historial">
+    @for (r of c.recordatorios; track r.fecha) {
+      <li>
+        <strong>{{ r.canal }} · {{ r.resultado === 'SIMULADO' ? 'Simulado (sin proveedor)' : r.resultado }}</strong>
+        <span>{{ r.fecha | date: 'dd/MM/yyyy h:mm a' }}{{ r.destino ? ' · ' + r.destino : '' }}</span>
+      </li>
+    }
+  </ul>
+}
+
+<h4 class="subtitulo">Historial</h4>
+<ul class="historial">
+  @for (h of c.historial; track $index) {
+    <li>
+      <strong>{{ h.descripcion }}</strong>
+      <span>{{ h.fecha | date: 'dd/MM/yyyy h:mm a' }} · {{ h.usuario }}</span>
+      @if (h.detalle) {
+        <span class="detalle">{{ h.detalle }}</span>
+      }
+    </li>
+  }
+</ul>

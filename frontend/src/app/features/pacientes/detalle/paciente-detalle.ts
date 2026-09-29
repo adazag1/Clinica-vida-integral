@@ -8,6 +8,8 @@ import { mensajeError } from '../../../core/api/api';
 import { AuthService } from '../../../core/auth/auth.service';
 import { Episodio, TIPOS_ATENCION, TipoAtencion } from '../../admisiones/admisiones.models';
 import { AdmisionesService } from '../../admisiones/admisiones.service';
+import { Cita } from '../../agenda/agenda.models';
+import { AgendaService } from '../../agenda/agenda.service';
 import { CAMPOS_PACIENTE, CambioDemografico, Paciente, REGIMENES, SEXOS } from '../pacientes.models';
 import { PacientesService } from '../pacientes.service';
 
@@ -20,6 +22,7 @@ import { PacientesService } from '../pacientes.service';
 export class PacienteDetalle implements OnInit {
   private readonly pacientes = inject(PacientesService);
   private readonly admisiones = inject(AdmisionesService);
+  private readonly agenda = inject(AgendaService);
   private readonly router = inject(Router);
   protected readonly auth = inject(AuthService);
 
@@ -28,6 +31,8 @@ export class PacienteDetalle implements OnInit {
   protected readonly paciente = signal<Paciente | null>(null);
   protected readonly episodios = signal<Episodio[]>([]);
   protected readonly cambios = signal<CambioDemografico[]>([]);
+  protected readonly citas = signal<Cita[]>([]);
+  protected readonly puedeVerCitas = computed(() => this.auth.tieneRol('AGENDAMIENTO', 'ADMISIONES', 'MEDICO'));
   protected readonly error = signal<string | null>(null);
 
   /** Sin documento solo se puede ingresar por urgencias (regla del backend). */
@@ -54,6 +59,9 @@ export class PacienteDetalle implements OnInit {
       error: (e: HttpErrorResponse) => this.error.set(mensajeError(e, 'No fue posible cargar el paciente.')),
     });
     this.admisiones.dePaciente(id).subscribe({ next: (lista) => this.episodios.set(lista) });
+    if (this.puedeVerCitas()) {
+      this.agenda.citasDePaciente(id).subscribe({ next: (lista) => this.citas.set(lista) });
+    }
     this.pacientes.cambios(id).subscribe({ next: (lista) => this.cambios.set(lista) });
   }
 
@@ -70,6 +78,13 @@ export class PacienteDetalle implements OnInit {
     if (estado === 'EN_ADMISION' || estado === 'EN_ATENCION') return 'chip--info';
     if (estado === 'ANULADO') return 'chip--critico';
     return 'chip--primario';
+  }
+
+  protected claseCita(estado: string): string {
+    if (estado === 'CONFIRMADA' || estado === 'ATENDIDA') return 'chip--normal';
+    if (estado === 'CANCELADA' || estado === 'NO_ASISTIO') return 'chip--critico';
+    if (estado === 'REPROGRAMADA') return 'chip--primario';
+    return 'chip--info';
   }
 
   protected admitir(): void {

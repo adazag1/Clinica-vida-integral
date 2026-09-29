@@ -5,10 +5,11 @@ import { filter, map } from 'rxjs';
 
 import { AuthService } from '../../core/auth/auth.service';
 import { MODULOS } from '../../core/navegacion/modulos';
+import { Campana } from '../notificaciones/campana';
 
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, Campana],
   templateUrl: './shell.html',
   styleUrl: './shell.scss',
 })

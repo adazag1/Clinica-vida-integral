@@ -1,0 +1,105 @@
+.acciones-cabecera {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.paciente {
+  margin-bottom: 14px;
+}
+
+.lista {
+  margin: 0 0 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  > div {
+    display: grid;
+    grid-template-columns: 24px 1fr;
+    column-gap: 10px;
+
+    > .icono {
+      grid-row: span 2;
+      color: var(--c-texto-2);
+      font-size: 20px;
+    }
+  }
+
+  dt {
+    color: var(--c-texto-2);
+    font-size: 12px;
+  }
+
+  dd {
+    margin: 0;
+    font-weight: 500;
+
+    small {
+      color: var(--c-texto-2);
+      font-weight: 400;
+    }
+  }
+}
+
+.capital::first-letter {
+  text-transform: uppercase;
+}
+
+.botones {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.asistencia {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.copiar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 13px;
+
+  .icono {
+    font-size: 18px;
+  }
+}
+
+.formulario {
+  margin-top: 4px;
+}
+
+.subtitulo {
+  font-size: 14px;
+  margin: 20px 0 8px;
+}
+
+.historial {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 14px;
+  border-left: 2px solid var(--c-borde);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  li {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 13px;
+  }
+
+  span {
+    color: var(--c-texto-2);
+  }
+
+  .detalle {
+    color: var(--c-texto);
+  }
+}

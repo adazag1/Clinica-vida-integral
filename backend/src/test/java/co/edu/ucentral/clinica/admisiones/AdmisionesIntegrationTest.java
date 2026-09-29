@@ -86,9 +86,13 @@ class AdmisionesIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.estado").value("EN_ESPERA_CONSULTA"));
 
-        mvc.perform(get("/api/episodios/lista-espera").header("Authorization", "Bearer " + token("medico")))
+        String medico = token("medico");
+        mvc.perform(get("/api/episodios/lista-espera").header("Authorization", "Bearer " + medico))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.esperaConsulta[*].id").value(hasItem((int) episodioId)));
+        // RFADM-012: los médicos reciben el aviso en la campana
+        mvc.perform(get("/api/notificaciones").header("Authorization", "Bearer " + medico))
+                .andExpect(jsonPath("$.notificaciones[*].enlace").value(hasItem("/admisiones/" + episodioId)));
 
         // Ya en espera de consulta no se puede modificar la admisión
         enviar(put("/api/episodios/" + episodioId + "/triage"), enfermeria,

@@ -6,7 +6,6 @@ import { EnConstruccion } from './features/en-construccion/en-construccion';
 
 /** Fase en la que se construye cada módulo pendiente (ver README). */
 const FASES: Record<string, string> = {
-  agenda: 'Fase 3',
   consulta: 'Fase 4',
   laboratorio: 'Fase 5',
   enfermeria: 'Fase 6',
@@ -32,6 +31,11 @@ export const routes: Routes = [
     path: 'login',
     canActivate: [invitadoGuard],
     loadComponent: () => import('./features/login/login').then((m) => m.Login),
+  },
+  {
+    // RFAGE-010: enlace del recordatorio; el paciente no tiene cuenta en el sistema
+    path: 'cita/:token',
+    loadComponent: () => import('./features/agenda/cita-publica/cita-publica').then((m) => m.CitaPublica),
   },
   {
     path: '',
@@ -83,6 +87,26 @@ export const routes: Routes = [
             path: ':id',
             loadComponent: () =>
               import('./features/admisiones/episodio/episodio-detalle').then((m) => m.EpisodioDetalle),
+          },
+        ],
+      },
+      {
+        path: 'agenda',
+        canActivate: [rolGuard],
+        data: { roles: rolesDe('agenda') },
+        children: [
+          { path: '', loadComponent: () => import('./features/agenda/agenda').then((m) => m.Agenda) },
+          {
+            path: 'lista-espera',
+            loadComponent: () =>
+              import('./features/agenda/lista-espera/lista-espera-citas').then((m) => m.ListaEsperaCitas),
+          },
+          {
+            path: 'configuracion',
+            canActivate: [rolGuard],
+            data: { roles: ['AGENDAMIENTO'] },
+            loadComponent: () =>
+              import('./features/agenda/configuracion/configuracion-agenda').then((m) => m.ConfiguracionAgenda),
           },
         ],
       },

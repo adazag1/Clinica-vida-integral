@@ -102,6 +102,37 @@
     </dl>
   </section>
 
+  @if (puedeVerCitas()) {
+    <section class="tarjeta">
+      <div class="titulo-con-accion">
+        <div class="tarjeta__titulo"><span class="icono">calendar_month</span>Citas</div>
+        @if (auth.tieneRol('AGENDAMIENTO', 'ADMISIONES') && !p.identificacionTemporal) {
+          <a class="btn btn--secundario btn--pequeno" routerLink="/agenda" [queryParams]="{ paciente: p.id }">
+            <span class="icono">add</span>Agendar cita</a>
+        }
+      </div>
+      @if (citas().length) {
+        <div class="tabla-contenedor">
+          <table class="tabla">
+            <thead><tr><th>Fecha</th><th>Profesional</th><th>Tipo</th><th>Estado</th></tr></thead>
+            <tbody>
+              @for (c of citas(); track c.id) {
+                <tr>
+                  <td class="nowrap"><a routerLink="/agenda" [queryParams]="{ cita: c.id }">{{ c.inicio | date: 'dd/MM/yyyy h:mm a' }}</a></td>
+                  <td>{{ c.profesional.nombre }} <small>· {{ c.profesional.especialidad }}</small></td>
+                  <td>{{ c.tipo.nombre }}</td>
+                  <td><span class="chip" [class]="'chip ' + claseCita(c.estado)">{{ c.estadoDescripcion }}</span></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <p class="vacio">Sin citas agendadas.</p>
+      }
+    </section>
+  }
+
   <section class="tarjeta">
     <div class="tarjeta__titulo"><span class="icono">clinical_notes</span>Atenciones</div>
     @if (episodios().length) {

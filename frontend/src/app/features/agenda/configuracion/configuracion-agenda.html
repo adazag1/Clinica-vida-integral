@@ -1,0 +1,115 @@
+<a class="volver" routerLink="/agenda"><span class="icono">arrow_back</span> Agenda</a>
+<div class="cabecera-pagina"><h2>Horarios y bloqueos</h2></div>
+
+<div class="columnas">
+  <section class="tarjeta">
+    <div class="tarjeta__titulo"><span class="icono">schedule</span>Horario semanal de atención</div>
+    @if (catalogos(); as c) {
+      <div class="campo">
+        <label for="profHorario">Profesional</label>
+        <div class="campo__control">
+          <select id="profHorario" [(ngModel)]="profesionalId" (ngModelChange)="cargarHorario()">
+            @for (p of c.profesionales; track p.id) {
+              <option [ngValue]="p.id">{{ p.nombre }} · {{ p.especialidad }}</option>
+            }
+          </select>
+        </div>
+      </div>
+    }
+    <p class="ayuda">Fuera de estas franjas no se puede agendar. Las franjas <strong>reservadas</strong> solo aceptan citas
+      prioritarias o urgentes.</p>
+
+    @for (d of porDia(); track d.dia) {
+      <div class="dia">
+        <strong>{{ dias[d.dia] }}</strong>
+        <div class="franjas">
+          @for (f of d.franjas; track f.indice) {
+            <div class="franja">
+              <input type="time" [value]="f.horaInicio" (change)="actualizar(f.indice, 'horaInicio', $any($event.target).value)"
+                [attr.aria-label]="'Inicio ' + dias[d.dia]" />
+              <span>a</span>
+              <input type="time" [value]="f.horaFin" (change)="actualizar(f.indice, 'horaFin', $any($event.target).value)"
+                [attr.aria-label]="'Fin ' + dias[d.dia]" />
+              <select [value]="f.tipo" (change)="actualizar(f.indice, 'tipo', $any($event.target).value)" aria-label="Tipo de franja">
+                <option value="NORMAL">Normal</option>
+                <option value="RESERVADA_PRIORIDAD">Reservada prioridades</option>
+              </select>
+              <button type="button" class="quitar" (click)="quitarFranja(f.indice)" aria-label="Quitar franja">
+                <span class="icono">delete</span></button>
+            </div>
+          } @empty {
+            <span class="no-atiende">No atiende</span>
+          }
+          <button type="button" class="enlace" (click)="agregarFranja(d.dia)">+ Franja</button>
+        </div>
+      </div>
+    }
+
+    @if (avisoHorario()) {
+      <div class="alerta alerta--exito"><span class="icono">check_circle</span>{{ avisoHorario() }}</div>
+    }
+    @if (errorHorario()) {
+      <div class="alerta alerta--error" role="alert"><span class="icono">error</span>{{ errorHorario() }}</div>
+    }
+    <div class="acciones">
+      <button type="button" class="btn btn--primario" (click)="guardarHorario()" [disabled]="guardando()">Guardar horario</button>
+    </div>
+  </section>
+
+  <section class="tarjeta">
+    <div class="tarjeta__titulo"><span class="icono">event_busy</span>Bloqueos de agenda</div>
+    <p class="ayuda">Vacaciones, permisos o eventos. No se puede bloquear un periodo con citas: reprográmelas primero.</p>
+    @if (catalogos(); as c) {
+      <div class="rejilla">
+        <div class="campo rejilla__ancho">
+          <label for="profBloqueo">Profesional</label>
+          <div class="campo__control">
+            <select id="profBloqueo" [(ngModel)]="nuevoBloqueo.profesionalId">
+              @for (p of c.profesionales; track p.id) { <option [ngValue]="p.id">{{ p.nombre }}</option> }
+            </select>
+          </div>
+        </div>
+        <div class="campo">
+          <label for="desde">Desde</label>
+          <div class="campo__control"><input id="desde" type="datetime-local" [(ngModel)]="nuevoBloqueo.desde" /></div>
+        </div>
+        <div class="campo">
+          <label for="hasta">Hasta</label>
+          <div class="campo__control"><input id="hasta" type="datetime-local" [(ngModel)]="nuevoBloqueo.hasta" /></div>
+        </div>
+        <div class="campo">
+          <label for="motivoBloqueo">Motivo</label>
+          <div class="campo__control">
+            <select id="motivoBloqueo" [(ngModel)]="nuevoBloqueo.motivo">
+              @for (m of motivos; track m.valor) { <option [value]="m.valor">{{ m.etiqueta }}</option> }
+            </select>
+          </div>
+        </div>
+        <div class="campo">
+          <label for="descBloqueo">Descripción</label>
+          <div class="campo__control"><input id="descBloqueo" [(ngModel)]="nuevoBloqueo.descripcion" /></div>
+        </div>
+      </div>
+    }
+    @if (errorBloqueo()) {
+      <div class="alerta alerta--error" role="alert"><span class="icono">error</span>{{ errorBloqueo() }}</div>
+    }
+    <div class="acciones">
+      <button type="button" class="btn btn--primario" (click)="bloquear()">Bloquear agenda</button>
+    </div>
+
+    <h4>Bloqueos vigentes</h4>
+    @for (b of bloqueos(); track b.id) {
+      <div class="bloqueo">
+        <div>
+          <strong>{{ nombre(b.profesionalId) }} · {{ b.motivoDescripcion }}</strong>
+          <span>{{ b.inicio | date: 'dd/MM/yyyy h:mm a' }} – {{ b.fin | date: 'dd/MM/yyyy h:mm a' }}</span>
+          @if (b.descripcion) { <span>{{ b.descripcion }}</span> }
+        </div>
+        <button type="button" class="btn btn--secundario btn--pequeno" (click)="desbloquear(b)">Quitar</button>
+      </div>
+    } @empty {
+      <p class="ayuda">No hay bloqueos vigentes.</p>
+    }
+  </section>
+</div>

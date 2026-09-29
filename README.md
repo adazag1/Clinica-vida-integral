@@ -76,6 +76,25 @@ cd frontend && npm test
 4. **Enviar a consulta** solo se habilita cuando no falta ningún requisito; el paciente pasa a la
    columna del médico ordenado por gravedad.
 
+## Agendamiento (Fase 3)
+
+- **Agenda del día** con una columna por profesional, indicadores (citas, confirmadas, lista de espera,
+  canceladas, asistencia) y ocupación de cada médico. Clic en un horario libre para agendar.
+- **Disponibilidad**: cada profesional tiene franjas semanales; la duración la fija el tipo de cita. La
+  última hora de la tarde de los profesionales de prueba está reservada para citas prioritarias y urgentes.
+- **Sin sobre-reservas**: al agendar se bloquea la agenda del profesional en la base de datos, así dos
+  personas que toman el mismo cupo al mismo tiempo no pueden quedar ambas con él (hay una prueba de esto).
+- **Cancelar / reprogramar** con motivo e historial. El cupo liberado pasa automáticamente al primero de la
+  **lista de espera** (por prioridad y antigüedad) y agendamiento recibe un aviso para llamarlo.
+- **Recordatorios** 24 h antes con un enlace (`/cita/<token>`) donde el paciente confirma o cancela sin cuenta.
+  Por correo si se configura `spring.mail.*`; sin proveedor quedan registrados como *simulados*. El SMS
+  requiere contratar un proveedor.
+- **Preparaciones**: al agendar una ecografía o un procedimiento se avisa al área (radiología, enfermería).
+- **Horarios y bloqueos** (vacaciones, permisos) en *Agendamiento → Horarios y bloqueos*.
+- **Campana de notificaciones**: también avisa a los médicos cuando un paciente de admisiones queda listo.
+
+Con el perfil `local` se crean 4 profesionales de prueba; el usuario `medico` es el Dr. Juan Pérez y ve su agenda.
+
 ## Despliegue en Azure
 
 | | Dirección |
@@ -122,7 +141,7 @@ Azure la vuelve a encender sola a los 7 días. Para borrar todo: `az group delet
 
 - [x] **Fase 1** — Base: login JWT, roles, auditoría de accesos, layout del frontend
 - [x] **Fase 2** — Pacientes, admisiones y triage (RFADM-002 a RFADM-013)
-- [ ] Fase 3 — Agendamiento
+- [x] **Fase 3** — Agendamiento (RFAGE-002 a RFAGE-015) y notificaciones internas
 - [ ] Fase 4 — Consulta médica / historia clínica
 - [ ] Fase 5 — Órdenes, laboratorio y notificaciones
 - [ ] Fase 6 — Enfermería
