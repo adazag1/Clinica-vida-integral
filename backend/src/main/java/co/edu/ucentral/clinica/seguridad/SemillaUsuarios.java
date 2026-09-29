@@ -39,6 +39,10 @@ public class SemillaUsuarios implements ApplicationRunner {
             Map.entry(Rol.DIRECTIVO, new String[]{"Elena Vargas", "Directora Ejecutiva"}),
             Map.entry(Rol.PACIENTE, new String[]{"Carlos Martínez", "Paciente"}));
 
+    /** Usuarios adicionales para flujos que necesitan dos personas del mismo rol (p. ej. doble lectura radiológica). */
+    private static final Map<String, Object[]> ADICIONALES = Map.of(
+            "radiologia2", new Object[]{Rol.RADIOLOGIA, "Dr. Felipe Rojas", "Médico Radiólogo"});
+
     private final UsuarioRepository usuarios;
     private final PasswordEncoder encoder;
     private final String passwordPrueba;
@@ -63,6 +67,13 @@ public class SemillaUsuarios implements ApplicationRunner {
             if (!usuarios.existsByUsernameIgnoreCase(username)) {
                 usuarios.save(new Usuario(username, username + "@clinicavidaintegral.test", hash,
                         datos[0], rol, datos[1]));
+                log.info("Usuario de prueba creado: {}", username);
+            }
+        });
+        ADICIONALES.forEach((username, datos) -> {
+            if (!usuarios.existsByUsernameIgnoreCase(username)) {
+                usuarios.save(new Usuario(username, username + "@clinicavidaintegral.test", hash, (String) datos[1],
+                        (Rol) datos[0], (String) datos[2]));
                 log.info("Usuario de prueba creado: {}", username);
             }
         });

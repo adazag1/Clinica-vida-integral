@@ -1,0 +1,264 @@
+<a class="volver" [routerLink]="esRadiologia() ? '/imagenes' : '/consulta'"><span class="icono">arrow_back</span>
+  {{ esRadiologia() ? 'Lista de trabajo' : 'Volver' }}</a>
+
+@if (error()) {
+  <div class="alerta alerta--error" role="alert"><span class="icono">error</span>{{ error() }}</div>
+}
+@if (aviso()) {
+  <div class="alerta alerta--exito" role="status"><span class="icono">check_circle</span>{{ aviso() }}</div>
+}
+
+@if (estudio(); as e) {
+  <section class="tarjeta encabezado">
+    <span class="avatar"><span class="icono">person</span></span>
+    <div class="encabezado__datos">
+      <h2>{{ e.resumen.paciente.nombreCompleto }}</h2>
+      <dl>
+        <div><dt>Edad</dt><dd>{{ e.resumen.paciente.edad !== null ? e.resumen.paciente.edad + ' años' : '—' }}</dd></div>
+        <div><dt>ID paciente</dt><dd>{{ e.resumen.paciente.tipoDocumento }} {{ e.resumen.paciente.numeroDocumento }}</dd></div>
+        <div><dt>Fecha del estudio</dt><dd>{{ (e.adquiridoEn ?? e.resumen.ordenadoEn) | date: 'dd/MM/yyyy h:mm a' }}</dd></div>
+        <div><dt>Médico solicitante</dt><dd>{{ e.resumen.medicoNombre }}</dd></div>
+      </dl>
+    </div>
+    <div class="estado">
+      <span class="chip" [class]="'chip ' + claseEstado(e.resumen.estado)"><span class="icono">
+        {{ e.resumen.estado === 'INFORMADO' ? 'check_circle' : e.resumen.estado === 'BLOQUEADO' ? 'block' : 'schedule' }}</span>{{ e.resumen.estadoDescripcion }}</span>
+      <span class="chip" [class]="'chip ' + clasePrioridad(e.resumen.prioridad)">{{ e.resumen.prioridadDescripcion }}</span>
+      @if (e.resumen.tatVencido) { <span class="chip chip--critico">Tiempo excedido</span> }
+    </div>
+  </section>
+
+  @if (e.bloqueoMotivo) {
+    <div class="alerta alerta--error"><span class="icono">block</span>
+      <span><strong>Bloqueado por identificación:</strong> {{ e.bloqueoMotivo }} ({{ e.bloqueadoPor }}, {{ e.bloqueadoEn | date: 'dd/MM h:mm a' }}).
+        No se puede leer ni firmar hasta resolverlo.</span></div>
+  }
+  @if (e.contexto.alergias.length) {
+    <div class="alerta alerta--aviso"><span class="icono">warning</span><span><strong>Alergias:</strong> {{ e.contexto.alergias.join(' · ') }}
+      <small>(tenerlo en cuenta si el estudio usa contraste)</small></span></div>
+  }
+
+  <div class="rejilla-visor">
+    <!-- Lista de estudios (RFRAD-005) -->
+    <section class="tarjeta columna-estudios">
+      <div class="tarjeta__titulo"><span class="icono">list_alt</span>Lista de estudios</div>
+      <button type="button" class="estudio estudio--actual">
+        <span class="icono">radiology</span>
+        <span><strong>{{ e.resumen.estudio }}</strong><small>{{ e.resumen.ordenadoEn | date: 'dd/MM/yyyy h:mm a' }}</small>
+          <small>{{ e.imagenes.length }} imágenes</small></span>
+        <span class="chip chip--info actual">Actual</span>
+      </button>
+      @for (p of e.previos; track p.id) {
+        <button type="button" class="estudio" (click)="abrirEstudio(p.id)">
+          <span class="icono">image</span>
+          <span><strong>{{ p.estudio }}</strong><small>{{ p.ordenadoEn | date: 'dd/MM/yyyy' }} · {{ p.estadoDescripcion }}</small>
+            @if (p.impresion) { <small class="impresion">{{ p.impresion }}</small> }</span>
+        </button>
+      }
+      @if (!e.previos.length) { <p class="vacio">Sin estudios previos.</p> }
+
+      @if (esRadiologia() && e.resumen.estado !== 'INFORMADO' && !bloqueado()) {
+        <div class="cargar">
+          <label class="etiqueta">Cargar imágenes (JPG, PNG o DICOM)
+            <input #entrada type="file" multiple accept=".jpg,.jpeg,.png,.dcm,image/jpeg,image/png,application/dicom" (change)="elegirArchivos($event)" /></label>
+          <label class="etiqueta">StudyInstanceUID en el PACS (opcional)
+            <input class="control" [(ngModel)]="uid" placeholder="1.2.840…" /></label>
+          <button type="button" class="btn btn--secundario btn--pequeno" (click)="cargarImagenes(entrada)" [disabled]="ocupado() || (!archivos.length && !uid.trim())">
+            <span class="icono">add</span>Cargar estudio</button>
+        </div>
+      }
+    </section>
+
+    <!-- Visor -->
+    <section class="tarjeta columna-visor">
+      <div class="titulo-accion">
+        <div class="tarjeta__titulo"><span class="icono">image_search</span>Visor de imágenes</div>
+        @if (e.urlPacs) {
+          <a class="enlace" [href]="e.urlPacs" target="_blank" rel="noopener"><span class="icono">open_in_new</span>Abrir en el PACS</a>
+        } @else if (e.studyInstanceUid) {
+          <small class="uid" title="Configure app.pacs.visor-url para abrirlo en el visor DICOM">UID {{ e.studyInstanceUid }}</small>
+        }
+      </div>
+      <app-visor-imagenes [estudioId]="e.resumen.id" [imagenes]="e.imagenes" [editable]="esRadiologo() && e.resumen.estado !== 'INFORMADO' && !bloqueado()"
+        (marcarClave)="marcarClave($event)" />
+    </section>
+
+    <!-- Informe -->
+    <section class="tarjeta columna-informe">
+      <div class="tarjeta__titulo"><span class="icono">description</span>Informe radiológico
+        @if (e.borrador) { <span class="chip chip--alerta">Borrador v{{ e.borrador.version }}</span> }
+        @else if (e.vigente) { <span class="chip chip--normal">Versión {{ e.vigente.version }}</span> }
+      </div>
+      @if (editable()) {
+        <label class="seccion">Hallazgos<textarea class="control" rows="8" [(ngModel)]="informe.hallazgos"></textarea></label>
+        <label class="seccion">Impresión<textarea class="control" rows="3" [(ngModel)]="informe.impresion"></textarea></label>
+        <label class="seccion">Recomendaciones<textarea class="control" rows="2" [(ngModel)]="informe.recomendaciones"></textarea></label>
+        @if (e.borrador?.motivoCambio) { <p class="motivo"><span class="icono">edit_note</span>Enmienda: {{ e.borrador?.motivoCambio }}</p> }
+      } @else if (e.vigente; as v) {
+        <h4>Hallazgos</h4><p class="texto">{{ v.hallazgos }}</p>
+        <h4>Impresión</h4><p class="texto">{{ v.impresion }}</p>
+        @if (v.recomendaciones) { <h4>Recomendaciones</h4><p class="texto">{{ v.recomendaciones }}</p> }
+        <div class="firma">
+          <span class="icono">verified</span>
+          <div>
+            <strong>{{ v.autorNombre }}</strong><small>Médico radiólogo</small>
+            <small>Firmado el {{ v.firmadoEn | date: 'dd/MM/yyyy h:mm a' }} · huella {{ v.firmaHash?.slice(0, 12) }}…
+              <strong [class.ok]="v.integro" [class.mal]="!v.integro">{{ v.integro ? '✔ íntegro' : '✖ alterado' }}</strong></small>
+          </div>
+        </div>
+        @if (e.criticoReceptor) {
+          <p class="critico"><span class="icono">priority_high</span>Hallazgo crítico informado a {{ e.criticoReceptor }} ({{ e.criticoMedio }})
+            el {{ e.criticoNotificadoEn | date: 'dd/MM h:mm a' }}</p>
+        }
+        @if (e.borrador) { <p class="motivo">Hay una enmienda en curso por {{ e.borrador.autorNombre }}.</p> }
+      } @else if (e.borrador) {
+        <p class="vacio">{{ e.borrador.autorNombre }} está escribiendo el informe.</p>
+      } @else {
+        <p class="vacio">{{ e.resumen.estado === 'ORDENADO' ? 'El estudio aún no tiene imágenes.' : 'Sin informe todavía.' }}</p>
+      }
+    </section>
+  </div>
+
+  <div class="rejilla-inferior">
+    <section class="tarjeta">
+      <div class="tarjeta__titulo"><span class="icono">clinical_notes</span>Información clínica</div>
+      <dl class="contexto">
+        <dt>Motivo del estudio</dt><dd>{{ e.motivo }}</dd>
+        <dt>Diagnóstico presuntivo</dt><dd>{{ e.diagnosticoPresuntivo ?? '—' }}</dd>
+        @if (e.contexto.motivoConsulta) { <dt>Motivo de consulta</dt><dd>{{ e.contexto.motivoConsulta }}</dd> }
+        @if (e.contexto.diagnosticos.length) { <dt>Diagnósticos de la consulta</dt><dd>{{ e.contexto.diagnosticos.join(' · ') }}</dd> }
+        <dt>Antecedentes</dt><dd>{{ e.contexto.antecedentes.length ? e.contexto.antecedentes.join(' · ') : 'Sin antecedentes registrados' }}</dd>
+      </dl>
+    </section>
+
+    <section class="tarjeta">
+      <div class="titulo-accion">
+        <div class="tarjeta__titulo"><span class="icono">group</span>Segunda lectura</div>
+        @if (esRadiologo() && !bloqueado()) {
+          <button type="button" class="enlace" (click)="abrirOpinion()">+ Pedir segunda lectura</button>
+        }
+      </div>
+      @for (o of e.segundasOpiniones; track o.id) {
+        <div class="opinion">
+          <small>{{ o.solicitadaPor }} → {{ o.asignadaANombre }} · {{ o.solicitadaEn | date: 'dd/MM h:mm a' }}</small>
+          <p>{{ o.pregunta }}</p>
+          @if (o.respondidaEn) {
+            <p><span class="chip" [class]="'chip ' + (o.concordancia === 'CONCORDANTE' ? 'chip--normal' : o.concordancia === 'DISCREPANCIA_MAYOR' ? 'chip--critico' : 'chip--alerta')">
+              {{ o.concordanciaDescripcion }}</span> {{ o.comentario }}</p>
+          } @else if (opinionMia()?.id === o.id) {
+            <div class="form-rejilla">
+              <label>Concordancia
+                <select class="control" [(ngModel)]="respuesta.concordancia">
+                  @for (c of concordancias; track c.valor) { <option [value]="c.valor">{{ c.etiqueta }}</option> }
+                </select></label>
+              <label class="ancho">Comentario<textarea class="control" rows="2" [(ngModel)]="respuesta.comentario"></textarea></label>
+            </div>
+            <div class="acciones"><button type="button" class="btn btn--primario btn--pequeno" (click)="responderOpinion(o.id)" [disabled]="ocupado()">Registrar segunda lectura</button></div>
+          } @else {
+            <p class="vacio">Pendiente de respuesta.</p>
+          }
+        </div>
+      } @empty {
+        <p class="vacio">No se ha pedido doble lectura.</p>
+      }
+    </section>
+
+    <section class="tarjeta">
+      <div class="tarjeta__titulo"><span class="icono">history</span>Versiones e historial</div>
+      @for (v of e.versiones; track v.version) {
+        <p class="version"><strong>v{{ v.version }}</strong> · {{ v.autorNombre }} · {{ v.firmadoEn | date: 'dd/MM/yyyy h:mm a' }}
+          @if (v.motivoCambio) { <br /><small>Motivo: {{ v.motivoCambio }}</small> }
+          <br /><small>Impresión: {{ v.impresion }}</small></p>
+      }
+      <ul class="lista-eventos">
+        @for (ev of e.eventos; track $index) {
+          <li><small>{{ ev.fecha | date: 'dd/MM h:mm a' }} · {{ ev.usuario }}</small><br />{{ ev.accion }}{{ ev.detalle ? ': ' + ev.detalle : '' }}</li>
+        }
+      </ul>
+    </section>
+  </div>
+
+  @if (esRadiologia()) {
+    <div class="barra-acciones">
+      @if (bloqueado()) {
+        <button type="button" class="btn btn--secundario" (click)="abrir('desbloqueo')"><span class="icono">lock_open</span>Desbloquear</button>
+      } @else {
+        <button type="button" class="btn btn--secundario" (click)="abrir('bloqueo')"><span class="icono">block</span>Bloquear por identificación</button>
+        @if (esRadiologo() && !e.borrador && e.resumen.estado !== 'INFORMADO' && e.resumen.asignadoA !== usuario()) {
+          <button type="button" class="btn btn--secundario" (click)="tomar()"><span class="icono">assignment_ind</span>Asignarme</button>
+        }
+      }
+      @if (editable()) {
+        <button type="button" class="btn btn--secundario" (click)="guardar()" [disabled]="ocupado()"><span class="icono">save</span>Guardar informe</button>
+        <button type="button" class="btn btn--primario" (click)="abrirFirma()" [disabled]="ocupado()"><span class="icono">check_circle</span>Finalizar estudio</button>
+      } @else if (esRadiologo() && e.resumen.estado === 'INFORMADO') {
+        <button type="button" class="btn btn--secundario" (click)="abrir('enmienda')"><span class="icono">edit_note</span>Enmendar informe</button>
+      }
+    </div>
+  }
+
+  @if (dialogo()) {
+    <div class="velo" (click)="dialogo.set(null)"></div>
+    <div class="dialogo tarjeta" role="dialog" aria-modal="true" aria-labelledby="titulo-dialogo">
+      @switch (dialogo()) {
+        @case ('firma') {
+          <h3 id="titulo-dialogo"><span class="icono">draw</span>Firmar informe</h3>
+          <p>Al firmar, esta versión queda cerrada y el médico recibe el aviso. Una corrección posterior será una versión nueva.</p>
+          <label class="check"><input type="checkbox" [(ngModel)]="firma.critico" /> Hay un hallazgo crítico y ya lo comuniqué</label>
+          @if (firma.critico) {
+            <div class="form-rejilla">
+              <label>¿A quién se comunicó?<input class="control" [(ngModel)]="firma.criticoReceptor" placeholder="Nombre del médico" /></label>
+              <label>Medio
+                <select class="control" [(ngModel)]="firma.criticoMedio">
+                  <option>Llamada</option><option>En persona</option><option>Mensaje institucional</option>
+                </select></label>
+            </div>
+          }
+          <label class="etiqueta">Contraseña<input class="control" type="password" [(ngModel)]="firma.password" (keyup.enter)="firmar()"
+            autocomplete="current-password" /></label>
+        }
+        @case ('enmienda') {
+          <h3 id="titulo-dialogo"><span class="icono">edit_note</span>Enmendar informe</h3>
+          <p>Se abre la versión {{ (e.versiones[0]?.version ?? 0) + 1 }} con el contenido actual. La versión firmada se conserva.</p>
+          <label class="etiqueta">Motivo de la corrección<textarea class="control" rows="2" [(ngModel)]="motivo"></textarea></label>
+        }
+        @case ('bloqueo') {
+          <h3 id="titulo-dialogo"><span class="icono">block</span>Bloquear por identificación</h3>
+          <p>Nadie podrá leer ni firmar el estudio hasta resolverlo. Se avisa a admisiones y al médico solicitante.</p>
+          <label class="etiqueta">¿Qué inconsistencia encontró?<textarea class="control" rows="2" [(ngModel)]="motivo"
+            placeholder="p. ej. El nombre en las imágenes no coincide con el paciente"></textarea></label>
+        }
+        @case ('desbloqueo') {
+          <h3 id="titulo-dialogo"><span class="icono">lock_open</span>Desbloquear estudio</h3>
+          <label class="etiqueta">¿Cómo se resolvió?<textarea class="control" rows="2" [(ngModel)]="motivo"></textarea></label>
+        }
+        @case ('opinion') {
+          <h3 id="titulo-dialogo"><span class="icono">group</span>Pedir segunda lectura</h3>
+          <div class="form-rejilla">
+            <label class="ancho">Radiólogo
+              <select class="control" [(ngModel)]="opinion.asignadaA">
+                <option value="">Seleccione…</option>
+                @for (r of radiologos(); track r.usuario) { <option [value]="r.usuario">{{ r.nombre }}</option> }
+              </select></label>
+            <label class="ancho">¿Qué quiere que revise?<textarea class="control" rows="2" [(ngModel)]="opinion.pregunta"></textarea></label>
+          </div>
+        }
+      }
+      @if (errorDialogo()) {
+        <div class="alerta alerta--error" role="alert"><span class="icono">error</span>{{ errorDialogo() }}</div>
+      }
+      <div class="acciones">
+        <button type="button" class="btn btn--secundario" (click)="dialogo.set(null)">Cancelar</button>
+        @switch (dialogo()) {
+          @case ('firma') { <button type="button" class="btn btn--primario" (click)="firmar()" [disabled]="!firma.password || ocupado()">Firmar y finalizar</button> }
+          @case ('enmienda') { <button type="button" class="btn btn--primario" (click)="enmendar()" [disabled]="!motivo.trim() || ocupado()">Abrir nueva versión</button> }
+          @case ('bloqueo') { <button type="button" class="btn btn--peligro" (click)="bloquear()" [disabled]="!motivo.trim() || ocupado()">Bloquear</button> }
+          @case ('desbloqueo') { <button type="button" class="btn btn--primario" (click)="desbloquear()" [disabled]="!motivo.trim() || ocupado()">Desbloquear</button> }
+          @case ('opinion') {
+            <button type="button" class="btn btn--primario" (click)="pedirOpinion()" [disabled]="!opinion.asignadaA || !opinion.pregunta.trim() || ocupado()">Solicitar</button>
+          }
+        }
+      </div>
+    </div>
+  }
+}

@@ -1,0 +1,232 @@
+<a class="volver" [routerLink]="esPatologia() ? '/patologia' : '/consulta'"><span class="icono">arrow_back</span>
+  {{ esPatologia() ? 'Casos de patología' : 'Volver' }}</a>
+
+@if (error()) {
+  <div class="alerta alerta--error" role="alert"><span class="icono">error</span>{{ error() }}</div>
+}
+@if (aviso()) {
+  <div class="alerta alerta--exito" role="status"><span class="icono">check_circle</span>{{ aviso() }}</div>
+}
+
+@if (caso(); as c) {
+  <section class="tarjeta encabezado">
+    <div class="encabezado__numero">
+      <span class="numero">{{ c.resumen.numero }}</span>
+      <span class="chip" [class]="'chip ' + clasePrioridad(c.resumen.prioridad)">{{ c.resumen.prioridadDescripcion }}</span>
+    </div>
+    <div class="encabezado__datos">
+      <h2>{{ c.resumen.paciente.nombreCompleto }}</h2>
+      <p>{{ c.resumen.paciente.tipoDocumento }} {{ c.resumen.paciente.numeroDocumento }}
+        {{ c.resumen.paciente.edad !== null ? ' · ' + c.resumen.paciente.edad + ' años' : '' }}
+        · {{ c.resumen.tipoDescripcion }}: <strong>{{ c.resumen.sitioAnatomico }}</strong> · {{ c.numeroMuestras }} muestra(s)
+        · {{ c.resumen.medicoNombre }}</p>
+      @if (c.datosClinicos) { <p class="clinica"><span class="icono">clinical_notes</span>{{ c.datosClinicos }}</p> }
+      @if (c.diagnosticosConsulta.length) { <p class="clinica"><span class="icono">stethoscope</span>{{ c.diagnosticosConsulta.join(' · ') }}</p> }
+    </div>
+    <span class="chip" [class]="'chip ' + claseEstado(c.resumen.estado)">{{ c.resumen.estadoDescripcion }}</span>
+  </section>
+
+  <ol class="pasos">
+    @for (p of nombresPasos; track p; let i = $index) {
+      <li [class.hecho]="i < paso() || c.resumen.estado === 'INFORMADO'" [class.actual]="i === paso() && c.resumen.estado !== 'INFORMADO'">
+        <span class="punto">{{ i + 1 }}</span>{{ p }}</li>
+    }
+  </ol>
+
+  <div class="rejilla">
+    <div class="principal">
+      @if (c.resumen.estado === 'SOLICITADO') {
+        <section class="tarjeta">
+          <div class="tarjeta__titulo"><span class="icono">inventory</span>Recepción de la muestra</div>
+          @if (esPatologia()) {
+            <p class="ayuda">Digite el documento que aparece en el rótulo del frasco (no lo copie de la solicitud). Si no coincide con el paciente, la muestra no entra.</p>
+            <div class="form-rejilla">
+              <label>Documento del rótulo<input class="control" [(ngModel)]="recepcion.documentoRotulo" autocomplete="off" /></label>
+              <label>Muestras recibidas<input class="control" type="number" min="1" [(ngModel)]="recepcion.muestrasRecibidas" /></label>
+              <label>Plantilla
+                <select class="control" [(ngModel)]="recepcion.plantillaId">
+                  <option [ngValue]="null">General de {{ c.resumen.tipoDescripcion.toLowerCase() }}</option>
+                  @for (p of plantillasDelTipo(); track p.id) {
+                    @if (p.servicio) { <option [ngValue]="p.id">{{ p.nombre }} ({{ p.servicio }})</option> }
+                  }
+                </select></label>
+              <label class="ancho">Observación<input class="control" [(ngModel)]="recepcion.observacion"
+                placeholder="Obligatoria si llegaron menos o más muestras de las enviadas" [class.control--error]="errores()['observacion']" /></label>
+            </div>
+            <div class="acciones"><button type="button" class="btn btn--primario" (click)="recibir()" [disabled]="!recepcion.documentoRotulo.trim() || ocupado()">
+              <span class="icono">how_to_reg</span>Verificar y recibir</button></div>
+          } @else {
+            <p class="vacio">La muestra aún no ha llegado a patología.</p>
+          }
+        </section>
+      }
+
+      @if (c.plantilla) {
+        <section class="tarjeta">
+          <div class="tarjeta__titulo"><span class="icono">straighten</span>Macroscopía <small class="plantilla">· {{ c.plantilla.nombre }}</small></div>
+          @if (macroEditable()) {
+            <div class="form-rejilla">
+              @for (campo of camposMacro(); track campo.clave) {
+                <label [class.ancho]="campo.tipo === 'texto'">{{ campo.etiqueta }}{{ campo.requerido ? ' *' : '' }}{{ campo.unidad ? ' (' + campo.unidad + ')' : '' }}
+                  @switch (campo.tipo) {
+                    @case ('opcion') {
+                      <select class="control" [(ngModel)]="macro[campo.clave]" [class.control--error]="errores()[campo.clave]">
+                        <option value="">Seleccione…</option>
+                        @for (o of campo.opciones ?? []; track o) { <option [value]="o">{{ o }}</option> }
+                      </select>
+                    }
+                    @case ('numero') { <input class="control" inputmode="decimal" [(ngModel)]="macro[campo.clave]" [class.control--error]="errores()[campo.clave]" /> }
+                    @default { <textarea class="control" rows="2" [(ngModel)]="macro[campo.clave]" [class.control--error]="errores()[campo.clave]"></textarea> }
+                  }
+                </label>
+              }
+            </div>
+            <div class="acciones"><button type="button" class="btn btn--primario btn--pequeno" (click)="guardarMacro()" [disabled]="ocupado()">Guardar macroscopía</button></div>
+          } @else {
+            <dl class="valores">
+              @for (campo of camposMacro(); track campo.clave) { <dt>{{ campo.etiqueta }}</dt><dd>{{ valor(campo, c.macroscopia) }}</dd> }
+            </dl>
+            @if (c.macroscopiaPor) { <small class="autor">Registrada por {{ c.macroscopiaPor }} el {{ c.macroscopiaEn | date: 'dd/MM/yyyy h:mm a' }}</small> }
+          }
+        </section>
+      }
+
+      @if (c.resumen.estado === 'MACROSCOPIA' || c.resumen.estado === 'INFORMADO') {
+        <section class="tarjeta">
+          <div class="titulo-accion">
+            <div class="tarjeta__titulo"><span class="icono">biotech</span>Microscopía y diagnóstico
+              @if (c.cambiosSinValidar) { <span class="chip chip--alerta">Corrección sin validar</span> }</div>
+            @if (esPatologo() && c.resumen.estado === 'INFORMADO' && !microEditable()) {
+              <button type="button" class="btn btn--secundario btn--pequeno" (click)="corrigiendo.set(true)"><span class="icono">edit_note</span>Corregir informe</button>
+            }
+          </div>
+          @if (microEditable()) {
+            @if (c.resumen.estado === 'INFORMADO') {
+              <p class="ayuda aviso"><span class="icono">info</span>Está corrigiendo un informe validado: al validar se creará la versión
+                {{ (c.versiones[0]?.version ?? 0) + 1 }} con el motivo del cambio. La versión anterior se conserva.</p>
+            }
+            <div class="form-rejilla">
+              @for (campo of camposMicro(); track campo.clave) {
+                <label [class.ancho]="campo.tipo === 'texto'">{{ campo.etiqueta }}{{ campo.requerido ? ' *' : '' }}{{ campo.unidad ? ' (' + campo.unidad + ')' : '' }}
+                  @switch (campo.tipo) {
+                    @case ('opcion') {
+                      <select class="control" [(ngModel)]="micro[campo.clave]" [class.control--error]="errores()[campo.clave]">
+                        <option value="">Seleccione…</option>
+                        @for (o of campo.opciones ?? []; track o) { <option [value]="o">{{ o }}</option> }
+                      </select>
+                    }
+                    @case ('numero') { <input class="control" inputmode="decimal" [(ngModel)]="micro[campo.clave]" [class.control--error]="errores()[campo.clave]" /> }
+                    @default { <textarea class="control" rows="3" [(ngModel)]="micro[campo.clave]" [class.control--error]="errores()[campo.clave]"></textarea> }
+                  }
+                </label>
+              }
+              <label class="ancho">Diagnóstico *<textarea class="control" rows="3" [(ngModel)]="diagnostico" [class.control--error]="errores()['diagnostico']"></textarea></label>
+            </div>
+            <div class="acciones">
+              <button type="button" class="btn btn--secundario btn--pequeno" (click)="guardarMicro()" [disabled]="ocupado()">Guardar borrador</button>
+              <button type="button" class="btn btn--primario btn--pequeno" (click)="abrirValidacion()" [disabled]="ocupado()"><span class="icono">verified</span>Validar informe</button>
+            </div>
+          } @else if (c.versiones[0]; as v) {
+            <dl class="valores">
+              @for (campo of camposMicro(); track campo.clave) { <dt>{{ campo.etiqueta }}</dt><dd>{{ valor(campo, v.microscopia) }}</dd> }
+            </dl>
+            <div class="diagnostico"><span>Diagnóstico</span><strong>{{ v.diagnostico }}</strong></div>
+            <div class="firma"><span class="icono">verified</span>
+              <div><strong>{{ v.autorNombre }}</strong><small>Médico patólogo · validado el {{ v.validadoEn | date: 'dd/MM/yyyy h:mm a' }} · versión {{ v.version }}</small>
+                <small>Huella {{ v.firmaHash.slice(0, 12) }}… <strong [class.ok]="v.integro" [class.mal]="!v.integro">{{ v.integro ? '✔ íntegro' : '✖ alterado' }}</strong></small></div>
+            </div>
+          } @else {
+            <p class="vacio">El patólogo aún no registra la microscopía.</p>
+          }
+        </section>
+      }
+    </div>
+
+    <aside class="lateral">
+      @if (c.alergias.length) {
+        <div class="alerta alerta--aviso"><span class="icono">warning</span><span>Alergias: {{ c.alergias.join(' · ') }}</span></div>
+      }
+
+      @if (c.versiones.length) {
+        <section class="tarjeta">
+          <div class="tarjeta__titulo"><span class="icono">history</span>Versiones del informe</div>
+          @for (v of c.versiones; track v.version; let i = $index) {
+            <div class="version">
+              <strong>Versión {{ v.version }}</strong> · {{ v.autorNombre }} · {{ v.validadoEn | date: 'dd/MM/yyyy h:mm a' }}
+              @if (v.motivoCambio) { <br /><small>Motivo: {{ v.motivoCambio }}</small> }
+              @if (cambios(v, i).length) { <br /><small>Cambió: {{ cambios(v, i).join(', ') }}</small> }
+              <br /><small class="dx">{{ v.diagnostico }}</small>
+            </div>
+          }
+          @if (c.retencionHasta) { <p class="retencion"><span class="icono">inventory_2</span>Conservar material e informe hasta {{ c.retencionHasta | date: 'dd/MM/yyyy' }}</p> }
+        </section>
+      }
+
+      @if (c.resumen.estado !== 'SOLICITADO') {
+        <section class="tarjeta">
+          <div class="tarjeta__titulo"><span class="icono">inventory_2</span>Custodia del material</div>
+          @for (u of c.ubicacionMaterial; track u) { <p class="ubicacion">{{ u }}</p> }
+          @if (esPatologia()) {
+            <div class="form-rejilla">
+              <label>Material<select class="control" [(ngModel)]="mov.material">
+                @for (m of materiales; track m.valor) { <option [value]="m.valor">{{ m.etiqueta }}</option> }</select></label>
+              <label>Movimiento<select class="control" [(ngModel)]="mov.accion">
+                @for (m of movimientos; track m.valor) { <option [value]="m.valor">{{ m.etiqueta }}</option> }</select></label>
+              <label>Cantidad<input class="control" type="number" min="1" [(ngModel)]="mov.cantidad" /></label>
+              @if (mov.accion === 'ARCHIVADO' || mov.accion === 'DEVUELTO') {
+                <label>Ubicación<input class="control" [(ngModel)]="mov.ubicacion" placeholder="Archivo, gaveta…" [class.control--error]="errores()['ubicacion']" /></label>
+              }
+              @if (mov.accion === 'PRESTADO') {
+                <label>Prestado a<input class="control" [(ngModel)]="mov.destinatario" [class.control--error]="errores()['destinatario']" /></label>
+              }
+              <label class="ancho">Motivo<input class="control" [(ngModel)]="mov.motivo" /></label>
+            </div>
+            <div class="acciones"><button type="button" class="btn btn--secundario btn--pequeno" (click)="registrarCustodia()" [disabled]="ocupado()">Registrar</button></div>
+          }
+          <ul class="lista-eventos">
+            @for (m of c.custodia; track $index) {
+              <li><small>{{ m.fecha | date: 'dd/MM/yyyy h:mm a' }} · {{ m.usuario }}</small><br />
+                {{ m.materialDescripcion }} ({{ m.cantidad }}): {{ m.accionDescripcion.toLowerCase() }}{{ m.ubicacion ? ' · ' + m.ubicacion : '' }}{{ m.destinatario ? ' · ' + m.destinatario : '' }}</li>
+            }
+          </ul>
+        </section>
+      }
+
+      <section class="tarjeta">
+        <div class="tarjeta__titulo"><span class="icono">receipt_long</span>Trazabilidad</div>
+        <ul class="lista-eventos">
+          @for (ev of c.eventos; track $index) {
+            <li><small>{{ ev.fecha | date: 'dd/MM h:mm a' }} · {{ ev.usuario }}</small><br />{{ ev.accion }}{{ ev.detalle ? ': ' + ev.detalle : '' }}</li>
+          }
+        </ul>
+      </section>
+
+      @if (c.previos.length) {
+        <section class="tarjeta">
+          <div class="tarjeta__titulo"><span class="icono">folder_shared</span>Casos previos del paciente</div>
+          @for (p of c.previos; track p.id) {
+            <a class="previo" [routerLink]="['/patologia/casos', p.id]"><strong>{{ p.numero }}</strong> · {{ p.sitioAnatomico }}
+              <br /><small>{{ p.diagnostico ?? p.estadoDescripcion }}</small></a>
+          }
+        </section>
+      }
+    </aside>
+  </div>
+
+  @if (validando()) {
+    <div class="velo" (click)="validando.set(false)"></div>
+    <div class="dialogo tarjeta" role="dialog" aria-modal="true" aria-labelledby="titulo-validar">
+      <h3 id="titulo-validar"><span class="icono">verified</span>Validar informe</h3>
+      <p>Se guarda la versión {{ (c.versiones[0]?.version ?? 0) + 1 }} con su nombre, la fecha y una huella que detecta cualquier alteración.</p>
+      @if (c.versiones.length) {
+        <label class="etiqueta">Motivo de la corrección<textarea class="control" rows="2" [(ngModel)]="motivoCambio"></textarea></label>
+      }
+      <label class="etiqueta">Contraseña<input class="control" type="password" [(ngModel)]="password" (keyup.enter)="validar()" autocomplete="current-password" /></label>
+      @if (errorValidacion()) { <div class="alerta alerta--error" role="alert"><span class="icono">error</span>{{ errorValidacion() }}</div> }
+      <div class="acciones">
+        <button type="button" class="btn btn--secundario" (click)="validando.set(false)">Cancelar</button>
+        <button type="button" class="btn btn--primario" (click)="validar()" [disabled]="!password || ocupado()">Validar</button>
+      </div>
+    </div>
+  }
+}

@@ -42,6 +42,12 @@ public class ManejadorGlobalExcepciones {
                 .body(ApiError.de(400, "SOLICITUD_INVALIDA", "El cuerpo de la solicitud no tiene un formato válido"));
     }
 
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiError> archivoGrande(org.springframework.web.multipart.MaxUploadSizeExceededException e) {
+        return ResponseEntity.badRequest().body(new ApiError(Instant.now(), 400, "VALIDACION",
+                "El archivo es demasiado grande", Map.of("archivo", "El archivo supera el tamaño máximo permitido (10 MB)")));
+    }
+
     @ExceptionHandler(ReglaNegocioException.class)
     public ResponseEntity<ApiError> reglaNegocio(ReglaNegocioException e) {
         return ResponseEntity.status(422).body(ApiError.de(422, e.getCodigo(), e.getMessage()));

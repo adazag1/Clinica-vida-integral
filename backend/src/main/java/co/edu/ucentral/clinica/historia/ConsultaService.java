@@ -28,9 +28,10 @@ import co.edu.ucentral.clinica.pacientes.dto.PacienteResumenDto;
 import co.edu.ucentral.clinica.seguridad.Usuario;
 import co.edu.ucentral.clinica.seguridad.UsuarioRepository;
 import org.springframework.data.domain.AuditorAware;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.AuthenticationException;
+import co.edu.ucentral.clinica.comun.seguridad.Reautenticador;
+import co.edu.ucentral.clinica.documentos.DocumentoGenerado;
+import co.edu.ucentral.clinica.documentos.TipoDocumento;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -64,7 +65,8 @@ public class ConsultaService {
     private final ValidadorAlergias validadorAlergias;
     private final EvaluadorSignos evaluador;
     private final FirmaClinica firma;
-    private final AuthenticationManager authenticationManager;
+    private final Reautenticador reautenticador;
+    private final ApplicationEventPublisher publicador;
     private final CalculadoraDisponibilidad calendario;
     private final AuditorAware<String> auditor;
 
@@ -74,8 +76,8 @@ public class ConsultaService {
                            CitaRepository citas, EventoCitaRepository eventosCita, ProfesionalRepository profesionales,
                            UsuarioRepository usuarios, PacienteService pacienteService, HistoriaService historia,
                            ValidadorAlergias validadorAlergias, EvaluadorSignos evaluador, FirmaClinica firma,
-                           AuthenticationManager authenticationManager, CalculadoraDisponibilidad calendario,
-                           AuditorAware<String> auditor) {
+                           Reautenticador reautenticador, ApplicationEventPublisher publicador,
+                           CalculadoraDisponibilidad calendario, AuditorAware<String> auditor) {
         this.consultas = consultas;
         this.diagnosticos = diagnosticos;
         this.medicamentos = medicamentos;
@@ -92,7 +94,8 @@ public class ConsultaService {
         this.validadorAlergias = validadorAlergias;
         this.evaluador = evaluador;
         this.firma = firma;
-        this.authenticationManager = authenticationManager;
+        this.reautenticador = reautenticador;
+        this.publicador = publicador;
         this.calendario = calendario;
         this.auditor = auditor;
     }
@@ -287,7 +290,7 @@ public class ConsultaService {
      * RFMT-007 + RFMT-011: no se firma sin los campos obligatorios; el médico confirma su identidad
      * con la contraseña. Al firmar se cierra el episodio de admisión y la cita queda atendida.
      */
-    @Transactional
+    @Transactional(noRollbackFor = ReglaNegocioException.class) // conserva el conteo de contraseñas erradas
     public ConsultaDto finalizar(Long id, String password) {
         String usuario = usuarioActual();
         Consulta c = buscar(id);
@@ -297,13 +300,12 @@ public class ConsultaService {
             throw new ReglaNegocioException("CONSULTA_INCOMPLETA",
                     "No se puede finalizar. Falta: " + String.join(", ", pendientes) + ".");
         }
-        try {
-            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(usuario, password));
-        } catch (AuthenticationException e) {
-            // 422 y no 401: la sesión sigue siendo válida, solo falló la confirmación de la firma
-            throw new ReglaNegocioException("FIRMA_INVALIDA", "Contraseña incorrecta. La consulta no se firmó.");
-        }
+        reautenticador.confirmar(usuario, password, "Contraseña incorrecta. La consulta no se firmó.");
         c.firmar(firma::huella);
+        // RFGAC-009: la nota firmada queda registrada en la gestión documental
+        publicador.publishEvent(new DocumentoGenerado(c.getPacienteId(), c.getEpisodioId(), TipoDocumento.HISTORIA_CLINICA,
+                "Consulta médica · " + c.getMedicoNombre(), "Consulta médica", c.getMedicoNombre(), "CONSULTA",
+                String.valueOf(c.getId()), "/consulta/" + c.getId(), LocalDate.now(calendario.getZona()), null));
 
         if (c.getEpisodioId() != null) {
             episodios.findById(c.getEpisodioId()).ifPresent(Episodio::cerrar);

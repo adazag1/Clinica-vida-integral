@@ -37,6 +37,9 @@ import co.edu.ucentral.clinica.pacientes.dto.PacienteResumenDto;
 import co.edu.ucentral.clinica.seguridad.Rol;
 import co.edu.ucentral.clinica.seguridad.Usuario;
 import co.edu.ucentral.clinica.seguridad.UsuarioRepository;
+import co.edu.ucentral.clinica.documentos.DocumentoGenerado;
+import co.edu.ucentral.clinica.documentos.TipoDocumento;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -84,6 +87,7 @@ public class LaboratorioService {
     private final InterpretadorResultados interpretador;
     private final NotificacionService notificaciones;
     private final CalculadoraDisponibilidad calendario;
+    private final ApplicationEventPublisher publicador;
     private final AuditorAware<String> auditor;
 
     public LaboratorioService(ExamenLabRepository examenes, RangoReferenciaRepository rangos,
@@ -93,7 +97,8 @@ public class LaboratorioService {
                               AntecedenteRepository antecedentes, UsuarioRepository usuarios,
                               PacienteService pacienteService, InterpretadorResultados interpretador,
                               NotificacionService notificaciones, CalculadoraDisponibilidad calendario,
-                              AuditorAware<String> auditor) {
+                              ApplicationEventPublisher publicador, AuditorAware<String> auditor) {
+        this.publicador = publicador;
         this.examenes = examenes;
         this.rangos = rangos;
         this.ordenes = ordenes;
@@ -342,7 +347,16 @@ public class LaboratorioService {
                     p.getNombreCompleto() + ": " + o.getExamenes().stream().map(e -> e.getExamen().getNombre())
                             .collect(Collectors.joining(", ")), enlace);
         }
+        // RFGAC-009: el resultado validado queda registrado en la gestión documental
+        publicador.publishEvent(new DocumentoGenerado(p.getId(), null, TipoDocumento.RESULTADO_LABORATORIO,
+                o.getExamenes().stream().map(e -> e.getExamen().getNombre()).collect(Collectors.joining(", ")) + " · " + o.getNumero(),
+                "Laboratorio clínico", nombreDe(o.getValidadaPor()), "LABORATORIO", String.valueOf(o.getId()), enlace,
+                LocalDate.now(calendario.getZona()), null));
         return armar(o);
+    }
+
+    private String nombreDe(String username) {
+        return usuarios.findByUsernameIgnoreCase(username).map(Usuario::getNombreCompleto).orElse(username);
     }
 
     /** Lo que impide validar, en el lenguaje del laboratorio. */

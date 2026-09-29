@@ -7,8 +7,6 @@ import { EnConstruccion } from './features/en-construccion/en-construccion';
 
 /** Fase en la que se construye cada módulo pendiente (ver README). */
 const FASES: Record<string, string> = {
-  imagenes: 'Fase 7',
-  patologia: 'Fase 7',
   documentos: 'Fase 7',
   facturacion: 'Fase 8',
   'auditoria-clinica': 'Fase 8',
@@ -167,6 +165,54 @@ export const routes: Routes = [
             data: { roles: HISTORIA },
             loadComponent: () =>
               import('./features/enfermeria/paciente/paciente-enfermeria').then((m) => m.PacienteEnfermeria),
+          },
+        ],
+      },
+      {
+        path: 'imagenes',
+        children: [
+          {
+            path: '',
+            canActivate: [rolGuard],
+            data: { roles: ['RADIOLOGIA'] },
+            loadComponent: () => import('./features/imagenes/lista/lista-trabajo').then((m) => m.ListaTrabajo),
+          },
+          {
+            path: 'configuracion',
+            canActivate: [rolGuard],
+            data: { roles: ['RADIOLOGIA'] },
+            loadComponent: () =>
+              import('./features/imagenes/configuracion/configuracion-imagenes').then((m) => m.ConfiguracionImagenes),
+          },
+          {
+            path: 'estudios/:id',
+            canActivate: [rolGuard],
+            data: { roles: ['RADIOLOGIA', ...HISTORIA] },
+            loadComponent: () => import('./features/imagenes/estudio/estudio-pagina').then((m) => m.EstudioPagina),
+          },
+        ],
+      },
+      {
+        path: 'patologia',
+        children: [
+          {
+            path: '',
+            canActivate: [rolGuard],
+            data: { roles: ['PATOLOGIA'] },
+            loadComponent: () => import('./features/patologia/cola/cola-patologia').then((m) => m.ColaPatologia),
+          },
+          {
+            path: 'plantillas',
+            canActivate: [rolGuard],
+            data: { roles: ['PATOLOGIA'] },
+            loadComponent: () =>
+              import('./features/patologia/plantillas/plantillas-patologia').then((m) => m.PlantillasPatologia),
+          },
+          {
+            path: 'casos/:id',
+            canActivate: [rolGuard],
+            data: { roles: ['PATOLOGIA', ...HISTORIA] },
+            loadComponent: () => import('./features/patologia/caso/caso-patologia').then((m) => m.CasoPatologia),
           },
         ],
       },

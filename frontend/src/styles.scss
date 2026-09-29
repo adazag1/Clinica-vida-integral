@@ -419,3 +419,142 @@ a {
     border-bottom: 0;
   }
 }
+
+/* Formularios compactos dentro de tarjetas (imágenes, patología, documentos) */
+.form-rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 10px;
+
+  > label,
+  .etiqueta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 13px;
+    color: var(--c-texto-2);
+  }
+
+  .ancho {
+    grid-column: 1 / -1;
+  }
+}
+
+.control {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--c-borde);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--c-texto);
+  background: #fff;
+
+  &:focus {
+    outline: 2px solid var(--c-azul-suave);
+    border-color: var(--c-azul);
+  }
+}
+
+textarea.control {
+  resize: vertical;
+}
+
+.control--error {
+  border-color: var(--c-critico);
+}
+
+.vacio {
+  margin: 0;
+  color: var(--c-texto-3);
+  font-size: 13.5px;
+}
+
+.titulo-accion {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.pildoras {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+
+  button {
+    height: 34px;
+    padding: 0 14px;
+    border: 1px solid var(--c-borde);
+    border-radius: 999px;
+    background: var(--c-superficie);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+
+    &:hover {
+      border-color: var(--c-azul);
+    }
+  }
+
+  .activa {
+    background: var(--c-azul);
+    border-color: var(--c-azul);
+    color: #fff;
+  }
+}
+
+/* Diálogo modal */
+.velo {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(16, 42, 76, 0.35);
+}
+
+.dialogo {
+  position: fixed;
+  z-index: 41;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(480px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+
+  h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 18px;
+    margin-bottom: 8px;
+  }
+
+  p {
+    color: var(--c-texto-2);
+  }
+
+  .alerta {
+    margin: 10px 0;
+  }
+}
+
+.lista-eventos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 13px;
+
+  li {
+    padding: 6px 0;
+    border-bottom: 1px solid var(--c-borde);
+
+    &:last-child {
+      border-bottom: 0;
+    }
+  }
+
+  small {
+    color: var(--c-texto-2);
+  }
+}
