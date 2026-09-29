@@ -133,6 +133,23 @@ public class Episodio extends EntidadAuditable {
         this.fechaListo = Instant.now();
     }
 
+    /** El médico abre la consulta del paciente que estaba en espera (Fase 4). */
+    public void iniciarAtencion() {
+        if (estado != EstadoEpisodio.EN_ESPERA_CONSULTA && estado != EstadoEpisodio.EN_ATENCION) {
+            throw new ReglaNegocioException("EPISODIO_NO_LISTO",
+                    "El paciente aún no está listo para consulta (" + estado.getDescripcion().toLowerCase() + ").");
+        }
+        this.estado = EstadoEpisodio.EN_ATENCION;
+    }
+
+    /** Se cierra al firmar la consulta que lo atendió. */
+    public void cerrar() {
+        if (estado == EstadoEpisodio.EN_ATENCION) {
+            this.estado = EstadoEpisodio.CERRADO;
+            this.fechaCierre = Instant.now();
+        }
+    }
+
     public void anular(String motivo) {
         if (estado != EstadoEpisodio.EN_ADMISION && estado != EstadoEpisodio.EN_ESPERA_CONSULTA) {
             throw new ReglaNegocioException("EPISODIO_NO_ANULABLE",

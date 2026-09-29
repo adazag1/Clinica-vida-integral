@@ -60,7 +60,7 @@ public final class Solicitudes {
             @NotNull HorarioProfesional.Tipo tipo) {
     }
 
-    public record HorarioRequest(@NotNull @Valid List<FranjaRequest> franjas) {
+    public record HorarioRequest(@NotNull List<@Valid FranjaRequest> franjas) {
     }
 
     public record ListaEsperaRequest(

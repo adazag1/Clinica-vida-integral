@@ -15,6 +15,9 @@
         }
       </p>
     </div>
+    @if (verHistoria()) {
+      <a class="btn btn--primario" [routerLink]="['/historia', p.id]"><span class="icono">clinical_notes</span> Historia clínica</a>
+    }
     @if (auth.tieneRol('ADMISIONES')) {
       <div class="acciones">
         <a class="btn btn--secundario" [routerLink]="['/pacientes', p.id, 'editar']">

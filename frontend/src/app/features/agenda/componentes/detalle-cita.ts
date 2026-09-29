@@ -2,13 +2,14 @@ import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Observable } from 'rxjs';
 
 import { mensajeError } from '../../../core/api/api';
 import { AuthService } from '../../../core/auth/auth.service';
 import { Cita, Cupo, MOTIVOS_CANCELACION, ResultadoCupoLiberado, fechaLocal } from '../agenda.models';
 import { AgendaService } from '../agenda.service';
+import { ConsultaService } from '../../consulta/consulta.service';
 import { SelectorCupo } from './selector-cupo';
 
 type Modo = 'ver' | 'cancelar' | 'reprogramar';
@@ -23,6 +24,8 @@ type Modo = 'ver' | 'cancelar' | 'reprogramar';
 export class DetalleCita {
   private readonly service = inject(AgendaService);
   private readonly auth = inject(AuthService);
+  private readonly consultas = inject(ConsultaService);
+  private readonly router = inject(Router);
 
   readonly cita = input.required<Cita>();
   /** La cita cambió (confirmada, cancelada...): la agenda debe recargarse. */
@@ -45,6 +48,20 @@ export class DetalleCita {
   protected readonly futura = computed(() => new Date(this.cita().inicio).getTime() > Date.now());
   protected readonly puedeAsistencia = computed(() => this.pendiente() && !this.futura());
   protected readonly fechaCita = computed(() => fechaLocal(new Date(this.cita().inicio)));
+
+  protected readonly esMedico = computed(() => this.auth.usuario()?.rol === 'MEDICO');
+
+  /** Abre la consulta de esta cita (Fase 4). */
+  protected atender(): void {
+    this.ocupado.set(true);
+    this.consultas.iniciar(this.cita().paciente.id, null, this.cita().id).subscribe({
+      next: (c) => this.router.navigate(['/consulta', c.id]),
+      error: (e: HttpErrorResponse) => {
+        this.ocupado.set(false);
+        this.error.set(mensajeError(e, 'No fue posible abrir la consulta.'));
+      },
+    });
+  }
 
   protected claseEstado(estado: string): string {
     return (

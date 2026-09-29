@@ -34,7 +34,7 @@ export class Shell {
 
   protected readonly titulo = computed(() => {
     const segmento = this.url().split(/[/?#]/)[1];
-    return MODULOS.find((m) => m.ruta === segmento)?.titulo ?? '';
+    return MODULOS.find((m) => m.ruta === segmento)?.titulo ?? (segmento === 'historia' ? 'Historia clínica' : '');
   });
 
   protected readonly iniciales = computed(() =>

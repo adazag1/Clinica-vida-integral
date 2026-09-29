@@ -95,6 +95,24 @@ cd frontend && npm test
 
 Con el perfil `local` se crean 4 profesionales de prueba; el usuario `medico` es el Dr. Juan Pérez y ve su agenda.
 
+## Consulta médica e historia clínica (Fase 4)
+
+- **Pacientes por atender** (usuario `medico`): sus consultas abiertas, los pacientes que admisiones dejó
+  listos y sus citas de hoy. Los críticos (triage I-II o signos vitales críticos) van primero y en rojo.
+- **Pantalla de consulta** según el mockup: motivo, enfermedad actual, examen físico, diagnósticos CIE-10
+  (uno principal; impresión o confirmado), plan, signos vitales con semáforo y fórmula médica.
+- **Resumen clínico** al lado: alergias, medicamentos actuales, diagnósticos activos, triage y antecedentes.
+- **Alergias**: la fórmula usa un catálogo con principio activo y familia; si el paciente es alérgico
+  (p. ej. a la penicilina) la prescripción de un medicamento de esa familia se **bloquea**.
+- **Firma**: no se puede finalizar sin motivo, enfermedad actual, examen físico, diagnóstico principal y
+  plan. El médico confirma con su contraseña; se guarda una huella SHA-256 del contenido y la consulta
+  queda inmutable. "Verificar integridad" detecta si alguien la alteró en la base de datos.
+  *Es una firma electrónica; la firma digital con certificado (Ley 527 de 1999) requiere contratar una
+  entidad de certificación.*
+- **Rangos de signos vitales** en `app.signos-vitales` (`application.yml`): deben validarlos los médicos.
+- **Historia clínica** (`/historia/<paciente>`): resumen, antecedentes (se inactivan con motivo, nunca se
+  borran), línea de tiempo de consultas y signos registrados. Solo la ven médicos, enfermería y auditoría.
+
 ## Despliegue en Azure
 
 | | Dirección |
@@ -142,7 +160,7 @@ Azure la vuelve a encender sola a los 7 días. Para borrar todo: `az group delet
 - [x] **Fase 1** — Base: login JWT, roles, auditoría de accesos, layout del frontend
 - [x] **Fase 2** — Pacientes, admisiones y triage (RFADM-002 a RFADM-013)
 - [x] **Fase 3** — Agendamiento (RFAGE-002 a RFAGE-015) y notificaciones internas
-- [ ] Fase 4 — Consulta médica / historia clínica
+- [x] **Fase 4** — Consulta médica e historia clínica (RFMT-002, 003, 007 a 012)
 - [ ] Fase 5 — Órdenes, laboratorio y notificaciones
 - [ ] Fase 6 — Enfermería
 - [ ] Fase 7 — Radiología, patología y gestión documental

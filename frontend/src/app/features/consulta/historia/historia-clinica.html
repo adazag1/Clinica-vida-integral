@@ -1,0 +1,126 @@
+@if (resumen(); as r) {
+  <a class="volver" [routerLink]="['/pacientes', r.paciente.id]"><span class="icono">arrow_back</span> Datos del paciente</a>
+  <div class="cabecera-pagina">
+    <div>
+      <h2>Historia clínica · {{ r.paciente.nombreCompleto }}</h2>
+      <p class="sub">{{ r.paciente.tipoDocumento }} {{ r.paciente.numeroDocumento }}{{ r.paciente.edad !== null ? ' · ' + r.paciente.edad + ' años' : '' }}</p>
+    </div>
+  </div>
+
+  <div class="rejilla">
+    <section class="tarjeta">
+      <div class="tarjeta__titulo"><span class="icono">clinical_notes</span>Resumen clínico</div>
+      <app-resumen-clinico [resumen]="r" />
+    </section>
+
+    <section class="tarjeta">
+      <div class="titulo-linea">
+        <div class="tarjeta__titulo"><span class="icono">list_alt</span>Antecedentes</div>
+        <label class="check"><input type="checkbox" [ngModel]="verInactivos()" (ngModelChange)="verInactivos.set($event)" /> Ver inactivos</label>
+      </div>
+      @if (puedeRegistrar()) {
+        <div class="nuevo">
+          <select [(ngModel)]="nuevo.tipo" aria-label="Tipo">
+            @for (t of tipos; track t.valor) { <option [value]="t.valor">{{ t.etiqueta }}</option> }
+          </select>
+          <input [(ngModel)]="nuevo.descripcion" [placeholder]="nuevo.tipo === 'ALERGIA' ? 'Sustancia' : 'Descripción'" aria-label="Descripción" />
+          @if (nuevo.tipo === 'ALERGIA') {
+            <select [(ngModel)]="nuevo.severidad" aria-label="Severidad">
+              <option value="LEVE">Leve</option><option value="MODERADA">Moderada</option><option value="SEVERA">Severa</option>
+            </select>
+          }
+          <input [(ngModel)]="nuevo.detalle" placeholder="Detalle / reacción" aria-label="Detalle" />
+          <button type="button" class="btn btn--primario btn--pequeno" (click)="agregar()">Agregar</button>
+        </div>
+        @if (errorNuevo()) { <p class="campo__error">{{ errorNuevo() }}</p> }
+      }
+      <ul class="antecedentes">
+        @for (a of visibles(); track a.id) {
+          <li [class.inactivo]="!a.activo">
+            <div>
+              <span class="chip" [class]="'chip ' + (a.tipo === 'ALERGIA' ? 'chip--critico' : 'chip--info')">{{ a.tipoDescripcion }}</span>
+              <strong>{{ a.descripcion }}</strong>{{ a.severidad ? ' · ' + a.severidad.toLowerCase() : '' }}
+              @if (a.detalle) { <span class="detalle">{{ a.detalle }}</span> }
+              <small>Registró {{ a.registradoPor }} · {{ a.registradoEn | date: 'dd/MM/yyyy' }}
+                @if (!a.activo) { · Inactivado por {{ a.modificadoPor }}: {{ a.motivoInactivacion }} }</small>
+            </div>
+            @if (a.activo && puedeRegistrar()) {
+              @if (inactivando === a.id) {
+                <span class="inactivar">
+                  <input [(ngModel)]="motivo" placeholder="Motivo" aria-label="Motivo de inactivación" />
+                  <button type="button" class="btn btn--peligro btn--pequeno" (click)="confirmarInactivar(a)" [disabled]="!motivo.trim()">Inactivar</button>
+                  <button type="button" class="enlace" (click)="inactivando = null">Cancelar</button>
+                </span>
+              } @else {
+                <button type="button" class="enlace" (click)="inactivando = a.id; motivo = ''">Inactivar</button>
+              }
+            }
+          </li>
+        } @empty {
+          <li class="vacio">Sin antecedentes registrados.</li>
+        }
+      </ul>
+    </section>
+  </div>
+
+  <section class="tarjeta">
+    <div class="tarjeta__titulo"><span class="icono">timeline</span>Consultas</div>
+    <ol class="linea-tiempo">
+      @for (c of consultas(); track c.id) {
+        <li>
+          <span class="punto" [class.punto--curso]="c.estado === 'EN_CURSO'"></span>
+          <div class="evento">
+            <div class="evento__cabecera">
+              <a [routerLink]="['/consulta', c.id]"><strong>{{ c.inicio | date: "dd/MM/yyyy h:mm a" }}</strong></a>
+              <span>{{ c.medicoNombre }}</span>
+              <span class="chip" [class]="'chip ' + (c.estado === 'FIRMADA' ? 'chip--primario' : 'chip--alerta')">{{ c.estado === 'FIRMADA' ? 'Firmada' : 'En curso' }}</span>
+            </div>
+            @if (c.motivoConsulta) { <p><em>Motivo:</em> {{ c.motivoConsulta }}</p> }
+            @for (d of c.diagnosticos; track d.diagnosticoId) {
+              <p class="dx"><strong>{{ d.codigo }}</strong> {{ d.nombre }}{{ d.principal ? ' (principal)' : '' }}{{ d.confirmado ? '' : ' · impresión' }}</p>
+            }
+            @if (c.prescripciones.length) {
+              <p class="rx"><span class="icono">prescriptions</span>
+                @for (p of c.prescripciones; track p.id; let ultimo = $last) {
+                  {{ p.medicamento }} {{ p.dosis }} {{ p.frecuencia.toLowerCase() }} × {{ p.duracionDias }} d{{ ultimo ? '' : '; ' }}
+                }
+              </p>
+            }
+            @if (c.plan) { <p><em>Plan:</em> {{ c.plan }}</p> }
+          </div>
+        </li>
+      } @empty {
+        <li class="vacio">El paciente no tiene consultas registradas.</li>
+      }
+    </ol>
+  </section>
+
+  <section class="tarjeta">
+    <div class="tarjeta__titulo"><span class="icono">monitoring</span>Signos vitales registrados</div>
+    @if (signos().length) {
+      <div class="tabla-contenedor">
+        <table class="tabla">
+          <thead><tr><th>Fecha</th><th>PA</th><th>FC</th><th>FR</th><th>Temp.</th><th>SpO₂</th><th>Peso</th><th>Registró</th></tr></thead>
+          <tbody>
+            @for (s of signos(); track s.id) {
+              <tr>
+                <td class="nowrap">{{ s.fecha | date: 'dd/MM/yyyy h:mm a' }}</td>
+                <td [class]="alerta(s, 'presionSistolica') || alerta(s, 'presionDiastolica')">{{ s.presionSistolica ?? '—' }}/{{ s.presionDiastolica ?? '—' }}</td>
+                <td [class]="alerta(s, 'frecuenciaCardiaca')">{{ s.frecuenciaCardiaca ?? '—' }}</td>
+                <td [class]="alerta(s, 'frecuenciaRespiratoria')">{{ s.frecuenciaRespiratoria ?? '—' }}</td>
+                <td [class]="alerta(s, 'temperatura')">{{ s.temperatura === null ? '—' : (s.temperatura | number: '1.1-1') }}</td>
+                <td [class]="alerta(s, 'saturacionOxigeno')">{{ s.saturacionOxigeno ?? '—' }}</td>
+                <td>{{ s.peso === null ? '—' : (s.peso | number: '1.1-1') }}</td>
+                <td>{{ s.registradoPor }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <p class="vacio">Sin registros de signos vitales fuera del triage.</p>
+    }
+  </section>
+} @else if (error()) {
+  <div class="alerta alerta--error" role="alert"><span class="icono">error</span>{{ error() }}</div>
+}

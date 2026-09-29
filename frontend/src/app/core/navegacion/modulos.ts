@@ -36,7 +36,7 @@ export const MODULOS: Modulo[] = [
     ruta: 'consulta',
     titulo: 'Consulta médica',
     icono: 'stethoscope',
-    descripcion: 'Historia clínica, diagnóstico y fórmula médica',
+    descripcion: 'Pacientes por atender, historia clínica, diagnóstico y fórmula',
     roles: ['MEDICO'],
   },
   {

@@ -124,6 +124,13 @@ public class Cita extends EntidadAuditable {
         estado = asistio ? EstadoCita.ATENDIDA : EstadoCita.NO_ASISTIO;
     }
 
+    /** Al firmarse la consulta que atendió esta cita (el paciente pudo llegar antes de la hora). */
+    public void marcarAtendida() {
+        if (estado.isPendiente()) {
+            estado = EstadoCita.ATENDIDA;
+        }
+    }
+
     public void registrarRecordatorio() {
         recordatorioEnviadoEn = Instant.now();
     }

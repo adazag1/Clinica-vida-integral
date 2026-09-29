@@ -1,0 +1,271 @@
+<a class="volver" routerLink="/consulta"><span class="icono">arrow_back</span> Pacientes por atender</a>
+
+@if (error() && !consulta()) {
+  <div class="alerta alerta--error" role="alert"><span class="icono">error</span>{{ error() }}</div>
+}
+
+@if (consulta(); as c) {
+  <section class="tarjeta encabezado">
+    <span class="avatar"><span class="icono">person</span></span>
+    <div class="encabezado__datos">
+      <h2><a [routerLink]="['/historia', c.paciente.id]" title="Ver historia clínica completa">{{ c.paciente.nombreCompleto }}</a></h2>
+      <dl>
+        <div><dt>Edad</dt><dd>{{ c.paciente.edad !== null ? c.paciente.edad + ' años' : '—' }}</dd></div>
+        <div><dt>ID paciente</dt><dd>{{ c.paciente.tipoDocumento }} {{ c.paciente.numeroDocumento }}</dd></div>
+        <div><dt>Teléfono</dt><dd>{{ c.paciente.telefono ?? '—' }}</dd></div>
+        @if (c.inicioCita) {
+          <div><dt>Cita</dt><dd><span class="icono">calendar_today</span>{{ c.inicioCita | date: 'dd/MM/yyyy' }}
+            <span class="icono">schedule</span>{{ c.inicioCita | date: 'h:mm a' }}</dd></div>
+        } @else if (c.numeroEpisodio) {
+          <div><dt>Atención</dt><dd>{{ c.numeroEpisodio }}</dd></div>
+        }
+      </dl>
+    </div>
+    <span class="chip" [class]="'chip ' + (c.estado === 'FIRMADA' ? 'chip--primario' : 'chip--normal')">
+      <span class="icono">{{ c.estado === 'FIRMADA' ? 'verified' : 'check_circle' }}</span>{{ c.estadoDescripcion }}
+    </span>
+  </section>
+
+  @if (c.estado === 'FIRMADA') {
+    <div class="alerta alerta--info firma">
+      <span class="icono">verified</span>
+      <span>Firmada por <strong>{{ c.medicoNombre }}</strong> el {{ c.firmadaEn | date: "dd/MM/yyyy 'a las' h:mm a" }}.
+        Huella: <code>{{ c.firmaHash?.slice(0, 16) }}…</code>
+        <button type="button" class="enlace" (click)="verificar()">Verificar integridad</button>
+        @if (verificacion(); as v) {
+          <strong [class.ok]="v.valida" [class.mal]="!v.valida">{{ v.valida ? ' ✔ El contenido no ha sido alterado.' : ' ✖ El contenido NO coincide con lo firmado.' }}</strong>
+        }
+      </span>
+    </div>
+  } @else if (!editable()) {
+    <div class="alerta alerta--aviso"><span class="icono">lock</span>Solo {{ c.medicoNombre }}, quien abrió la consulta, puede modificarla.</div>
+  }
+
+  <div class="rejilla-consulta">
+    <div class="columna-principal">
+      <section class="tarjeta">
+        <div class="tarjeta__titulo"><span class="icono">description</span>Motivo de consulta</div>
+        <textarea class="area" rows="2" [(ngModel)]="notas.motivoConsulta" (ngModelChange)="marcarCambio()" [readonly]="!editable()"
+          aria-label="Motivo de consulta"></textarea>
+      </section>
+
+      <section class="tarjeta">
+        <div class="tarjeta__titulo"><span class="icono">history_edu</span>Enfermedad actual</div>
+        <textarea class="area" rows="3" [(ngModel)]="notas.enfermedadActual" (ngModelChange)="marcarCambio()" [readonly]="!editable()"
+          placeholder="Evolución de los síntomas, tiempo, factores asociados" aria-label="Enfermedad actual"></textarea>
+      </section>
+
+      <section class="tarjeta">
+        <div class="tarjeta__titulo"><span class="icono">body_system</span>Examen físico</div>
+        <textarea class="area" rows="3" [(ngModel)]="notas.examenFisico" (ngModelChange)="marcarCambio()" [readonly]="!editable()"
+          aria-label="Examen físico"></textarea>
+      </section>
+
+      <section class="tarjeta">
+        <div class="tarjeta__titulo"><span class="icono">stethoscope</span>Diagnóstico</div>
+        @if (editable()) {
+          <div class="buscador-dx">
+            <div class="campo__control">
+              <span class="icono">search</span>
+              <input [(ngModel)]="textoDx" (ngModelChange)="buscarDx($event)" placeholder="Buscar CIE-10 por código o nombre (ej. J02.9, faringitis)"
+                autocomplete="off" aria-label="Buscar diagnóstico" />
+            </div>
+            @if (resultadosDx().length) {
+              <ul class="sugerencias">
+                @for (d of resultadosDx(); track d.id) {
+                  <li><button type="button" (click)="agregarDx(d)"><strong>{{ d.codigo }}</strong> {{ d.nombre }}</button></li>
+                }
+              </ul>
+            }
+          </div>
+        }
+        @for (d of diagnosticos(); track d.diagnosticoId) {
+          <div class="dx" [class.dx--principal]="d.principal">
+            <span class="dx__codigo">{{ d.codigo }}</span>
+            <span class="dx__nombre">{{ d.nombre }}</span>
+            @if (d.principal) {
+              <span class="chip chip--primario">Principal</span>
+            } @else if (editable()) {
+              <button type="button" class="enlace" (click)="hacerPrincipal(d.diagnosticoId)">Hacer principal</button>
+            } @else {
+              <span class="chip chip--info">Relacionado</span>
+            }
+            <button type="button" class="chip" [class.chip--normal]="d.confirmado" [class.chip--alerta]="!d.confirmado"
+              [disabled]="!editable()" (click)="alternarConfirmado(d.diagnosticoId)" title="Cambiar entre impresión diagnóstica y confirmado">
+              {{ d.confirmado ? 'Confirmado' : 'Impresión diagnóstica' }}
+            </button>
+            @if (editable()) {
+              <button type="button" class="quitar" (click)="quitarDx(d.diagnosticoId)" aria-label="Quitar diagnóstico"><span class="icono">close</span></button>
+            }
+          </div>
+        } @empty {
+          <p class="vacio">Sin diagnósticos. El principal es obligatorio para finalizar.</p>
+        }
+      </section>
+
+      <section class="tarjeta">
+        <div class="tarjeta__titulo"><span class="icono">checklist</span>Plan y conducta</div>
+        <textarea class="area" rows="3" [(ngModel)]="notas.plan" (ngModelChange)="marcarCambio()" [readonly]="!editable()"
+          placeholder="Tratamiento, recomendaciones, exámenes a solicitar, control" aria-label="Plan y conducta"></textarea>
+      </section>
+    </div>
+
+    <aside class="columna-lateral">
+      <section class="tarjeta">
+        <div class="tarjeta__titulo"><span class="icono">ecg_heart</span>Signos vitales</div>
+        <app-tarjetas-signos [signos]="ultimosSignos()" />
+        @if (editandoSignos()) {
+          <div class="form-signos">
+            <label>PA sistólica<input type="number" [(ngModel)]="nuevosSignos.presionSistolica" /></label>
+            <label>PA diastólica<input type="number" [(ngModel)]="nuevosSignos.presionDiastolica" /></label>
+            <label>FC (lpm)<input type="number" [(ngModel)]="nuevosSignos.frecuenciaCardiaca" /></label>
+            <label>FR (rpm)<input type="number" [(ngModel)]="nuevosSignos.frecuenciaRespiratoria" /></label>
+            <label>Temp. (°C)<input type="number" step="0.1" [(ngModel)]="nuevosSignos.temperatura" /></label>
+            <label>SpO₂ (%)<input type="number" [(ngModel)]="nuevosSignos.saturacionOxigeno" /></label>
+            <label>Peso (kg)<input type="number" step="0.1" [(ngModel)]="nuevosSignos.peso" /></label>
+            <label>Talla (cm)<input type="number" [(ngModel)]="nuevosSignos.talla" /></label>
+          </div>
+          @if (errorSignos()) {
+            <p class="campo__error">{{ errorSignos() }}</p>
+          }
+          <div class="acciones">
+            <button type="button" class="btn btn--secundario btn--pequeno" (click)="editandoSignos.set(false)">Cancelar</button>
+            <button type="button" class="btn btn--primario btn--pequeno" (click)="guardarSignos()">Registrar</button>
+          </div>
+        } @else if (editable()) {
+          <div class="acciones">
+            <button type="button" class="btn btn--secundario btn--pequeno" (click)="editandoSignos.set(true)">
+              <span class="icono">refresh</span>Actualizar signos vitales</button>
+          </div>
+        }
+      </section>
+
+      <section class="tarjeta">
+        <div class="titulo-accion">
+          <div class="tarjeta__titulo"><span class="icono">clinical_notes</span>Resumen clínico</div>
+          @if (editable() && !agregandoAntecedente()) {
+            <button type="button" class="enlace" (click)="agregandoAntecedente.set(true)">+ Antecedente</button>
+          }
+        </div>
+        @if (agregandoAntecedente()) {
+          <div class="form-antecedente">
+            <select [(ngModel)]="antecedente.tipo" aria-label="Tipo de antecedente">
+              @for (t of tiposAntecedente; track t.valor) { <option [value]="t.valor">{{ t.etiqueta }}</option> }
+            </select>
+            <input [(ngModel)]="antecedente.descripcion"
+              [placeholder]="antecedente.tipo === 'ALERGIA' ? 'Sustancia (ej. Penicilina, AINE)' : 'Descripción'" aria-label="Descripción" />
+            @if (antecedente.tipo === 'ALERGIA') {
+              <select [(ngModel)]="antecedente.severidad" aria-label="Severidad">
+                <option value="LEVE">Leve</option><option value="MODERADA">Moderada</option><option value="SEVERA">Severa</option>
+              </select>
+            }
+            <input [(ngModel)]="antecedente.detalle" [placeholder]="antecedente.tipo === 'ALERGIA' ? 'Reacción (ej. urticaria)' : 'Detalle'" aria-label="Detalle" />
+            @if (errorAntecedente()) { <p class="campo__error">{{ errorAntecedente() }}</p> }
+            <div class="acciones">
+              <button type="button" class="btn btn--secundario btn--pequeno" (click)="agregandoAntecedente.set(false)">Cancelar</button>
+              <button type="button" class="btn btn--primario btn--pequeno" (click)="guardarAntecedente()">Guardar</button>
+            </div>
+          </div>
+        }
+        @if (resumen(); as r) {
+          <app-resumen-clinico [resumen]="r" />
+        } @else {
+          <p class="vacio">Cargando…</p>
+        }
+      </section>
+    </aside>
+  </div>
+
+  <section class="tarjeta formula">
+    <div class="tarjeta__titulo"><span class="icono">prescriptions</span>Tratamiento / Fórmula médica</div>
+    @if (alergiaBloqueante()) {
+      <div class="alerta alerta--error bloqueo" role="alert"><span class="icono">block</span><strong>{{ alergiaBloqueante() }}</strong></div>
+    }
+    <div class="tabla-contenedor">
+      <table class="tabla">
+        <thead><tr><th>Medicamento</th><th>Presentación</th><th>Dosis</th><th>Frecuencia</th><th>Duración</th><th>Indicaciones</th><th></th></tr></thead>
+        <tbody>
+          @for (p of c.prescripciones; track p.id) {
+            <tr>
+              <td><strong>{{ p.medicamento }}</strong></td>
+              <td>{{ p.presentacion }} · {{ p.via }}</td>
+              <td>{{ p.dosis }}</td>
+              <td>{{ p.frecuencia }}</td>
+              <td>{{ p.duracionDias }} días</td>
+              <td>{{ p.indicaciones ?? '—' }}</td>
+              <td>
+                @if (editable()) {
+                  <button type="button" class="quitar" (click)="quitarMedicamento(p.id)" aria-label="Quitar medicamento"><span class="icono">delete</span></button>
+                }
+              </td>
+            </tr>
+          }
+          @if (editable()) {
+            <tr class="nueva">
+              <td class="celda-med">
+                <input [(ngModel)]="textoMed" (ngModelChange)="buscarMed($event)" placeholder="Buscar medicamento" autocomplete="off" aria-label="Medicamento" />
+                @if (resultadosMed().length) {
+                  <ul class="sugerencias">
+                    @for (m of resultadosMed(); track m.id) {
+                      <li><button type="button" (click)="elegirMed(m)"><strong>{{ m.nombre }}</strong> <small>{{ m.familia }}</small></button></li>
+                    }
+                  </ul>
+                }
+              </td>
+              <td>{{ medicamento ? medicamento.presentacion + ' · ' + medicamento.via : '' }}</td>
+              <td><input [(ngModel)]="receta.dosis" placeholder="500 mg" aria-label="Dosis" /></td>
+              <td><input [(ngModel)]="receta.frecuencia" placeholder="Cada 8 horas" aria-label="Frecuencia" /></td>
+              <td><input type="number" min="1" max="365" [(ngModel)]="receta.duracionDias" aria-label="Duración en días" class="corto" /></td>
+              <td><input [(ngModel)]="receta.indicaciones" placeholder="Después de las comidas" aria-label="Indicaciones" /></td>
+              <td></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (errorReceta()) { <p class="campo__error">{{ errorReceta() }}</p> }
+    @if (editable()) {
+      <button type="button" class="btn btn--secundario btn--pequeno agregar" (click)="agregarMedicamento()">
+        <span class="icono">add</span>Agregar medicamento</button>
+    } @else if (!c.prescripciones.length) {
+      <p class="vacio">Sin medicamentos formulados.</p>
+    }
+  </section>
+
+  @if (editable()) {
+    <div class="barra-acciones">
+      <span class="estado-guardado">
+        @if (aviso()) { <span class="ok"><span class="icono">check</span>{{ aviso() }}</span> }
+        @else if (sinGuardar()) { <span class="pendiente"><span class="icono">edit</span>Cambios sin guardar</span> }
+        @if (error()) { <span class="mal">{{ error() }}</span> }
+      </span>
+      <button type="button" class="btn btn--secundario" (click)="guardar()" [disabled]="guardando()"><span class="icono">save</span>Guardar</button>
+      <button type="button" class="btn btn--primario" (click)="prepararFirma()" [disabled]="guardando()">
+        <span class="icono">task_alt</span>Finalizar consulta</button>
+    </div>
+  } @else if (aviso()) {
+    <div class="alerta alerta--exito"><span class="icono">check_circle</span>{{ aviso() }}</div>
+  }
+
+  @if (firmando()) {
+    <div class="velo" (click)="firmando.set(false)"></div>
+    <div class="dialogo tarjeta" role="dialog" aria-labelledby="titulo-firma" aria-modal="true">
+      <h3 id="titulo-firma"><span class="icono">draw</span>Firmar consulta</h3>
+      <p>Al firmar, la consulta queda cerrada y ya no se podrá modificar. Confirme su identidad con su contraseña.</p>
+      <div class="campo">
+        <label for="passwordFirma">Contraseña de {{ c.medicoNombre }}</label>
+        <div class="campo__control">
+          <span class="icono">lock</span>
+          <input id="passwordFirma" type="password" [(ngModel)]="password" (keyup.enter)="firmar()" autocomplete="current-password" />
+        </div>
+      </div>
+      @if (errorFirma()) {
+        <div class="alerta alerta--error" role="alert"><span class="icono">error</span>{{ errorFirma() }}</div>
+      }
+      <div class="acciones">
+        <button type="button" class="btn btn--secundario" (click)="firmando.set(false)">Cancelar</button>
+        <button type="button" class="btn btn--primario" (click)="firmar()" [disabled]="!password || guardando()">Firmar y finalizar</button>
+      </div>
+    </div>
+  }
+}

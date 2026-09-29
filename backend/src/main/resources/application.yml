@@ -48,3 +48,12 @@ app:
   recordatorios:
     # Cuántas horas antes de la cita se envía el recordatorio (RFAGE-009)
     horas-antes: 24
+  # RFMT-010: rangos de alerta de signos vitales en adultos (deben validarlos los médicos de la clínica).
+  # Fuera de normal = alerta amarilla; fuera de crítico = alerta roja.
+  signos-vitales:
+    presion-sistolica: { normal-min: 90, normal-max: 139, critico-min: 70, critico-max: 219 }
+    presion-diastolica: { normal-min: 60, normal-max: 89, critico-min: 40, critico-max: 119 }
+    frecuencia-cardiaca: { normal-min: 60, normal-max: 100, critico-min: 40, critico-max: 150 }
+    frecuencia-respiratoria: { normal-min: 12, normal-max: 20, critico-min: 8, critico-max: 30 }
+    temperatura: { normal-min: 36.0, normal-max: 37.9, critico-min: 35.0, critico-max: 39.9 }
+    saturacion-oxigeno: { normal-min: 94, normal-max: 100, critico-min: 89, critico-max: 100 }

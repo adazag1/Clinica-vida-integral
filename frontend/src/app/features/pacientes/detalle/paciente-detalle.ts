@@ -32,6 +32,8 @@ export class PacienteDetalle implements OnInit {
   protected readonly episodios = signal<Episodio[]>([]);
   protected readonly cambios = signal<CambioDemografico[]>([]);
   protected readonly citas = signal<Cita[]>([]);
+  /** La historia clínica no la ve admisiones ni el administrador (RNFMT-003). */
+  protected readonly verHistoria = computed(() => ['MEDICO', 'ENFERMERIA', 'AUDITORIA'].includes(this.auth.usuario()?.rol ?? ''));
   protected readonly puedeVerCitas = computed(() => this.auth.tieneRol('AGENDAMIENTO', 'ADMISIONES', 'MEDICO'));
   protected readonly error = signal<string | null>(null);
 

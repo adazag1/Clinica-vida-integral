@@ -86,7 +86,11 @@
   }
   @default {
     <div class="botones">
-      <a class="btn btn--primario btn--bloque" [routerLink]="['/pacientes', c.paciente.id]">
+      @if (esMedico() && pendiente()) {
+        <button type="button" class="btn btn--primario btn--bloque" (click)="atender()" [disabled]="ocupado()">
+          <span class="icono">stethoscope</span>Atender</button>
+      }
+      <a class="btn btn--bloque" [class.btn--primario]="!esMedico()" [class.btn--secundario]="esMedico()" [routerLink]="['/pacientes', c.paciente.id]">
         <span class="icono">folder_shared</span>Ver paciente
       </a>
       @if (puedeEditar() && pendiente()) {

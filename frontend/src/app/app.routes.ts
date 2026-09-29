@@ -1,12 +1,12 @@
 import { Routes } from '@angular/router';
 
 import { autenticadoGuard, invitadoGuard, rolGuard } from './core/auth/auth.guards';
+import { Rol } from './core/auth/auth.models';
 import { MODULOS } from './core/navegacion/modulos';
 import { EnConstruccion } from './features/en-construccion/en-construccion';
 
 /** Fase en la que se construye cada módulo pendiente (ver README). */
 const FASES: Record<string, string> = {
-  consulta: 'Fase 4',
   laboratorio: 'Fase 5',
   enfermeria: 'Fase 6',
   imagenes: 'Fase 7',
@@ -18,6 +18,9 @@ const FASES: Record<string, string> = {
 };
 
 const rolesDe = (ruta: string) => MODULOS.find((m) => m.ruta === ruta)?.roles ?? [];
+
+/** RNFMT-003: la historia clínica solo la ven el personal asistencial y auditoría. */
+const HISTORIA: Rol[] = ['MEDICO', 'ENFERMERIA', 'AUDITORIA'];
 
 const modulosPendientes: Routes = MODULOS.filter((m) => FASES[m.ruta]).map((m) => ({
   path: m.ruta,
@@ -109,6 +112,29 @@ export const routes: Routes = [
               import('./features/agenda/configuracion/configuracion-agenda').then((m) => m.ConfiguracionAgenda),
           },
         ],
+      },
+      {
+        path: 'consulta',
+        children: [
+          {
+            path: '',
+            canActivate: [rolGuard],
+            data: { roles: ['MEDICO'] },
+            loadComponent: () => import('./features/consulta/lista/por-atender').then((m) => m.PorAtender),
+          },
+          {
+            path: ':id',
+            canActivate: [rolGuard],
+            data: { roles: HISTORIA },
+            loadComponent: () => import('./features/consulta/pagina/consulta-pagina').then((m) => m.ConsultaPagina),
+          },
+        ],
+      },
+      {
+        path: 'historia/:pacienteId',
+        canActivate: [rolGuard],
+        data: { roles: HISTORIA },
+        loadComponent: () => import('./features/consulta/historia/historia-clinica').then((m) => m.HistoriaClinica),
       },
       {
         path: 'registro-accesos',
