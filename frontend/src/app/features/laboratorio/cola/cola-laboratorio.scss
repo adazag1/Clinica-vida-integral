@@ -1,0 +1,162 @@
+.calidad {
+  margin-bottom: 16px;
+}
+
+.calidad__cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.calidad__areas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.area {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--c-borde);
+  border-radius: var(--radio-sm);
+  color: var(--c-texto-2);
+
+  > .icono {
+    font-size: 26px;
+  }
+
+  div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  strong {
+    color: var(--c-texto);
+  }
+
+  span {
+    font-size: 12.5px;
+  }
+}
+
+.area--ok {
+  border-color: #a7dfbd;
+  background: var(--c-normal-suave);
+
+  > .icono {
+    color: var(--c-normal);
+  }
+}
+
+.area--mal {
+  border-color: #f4b4b4;
+  background: var(--c-critico-suave);
+
+  > .icono {
+    color: var(--c-critico);
+  }
+}
+
+.form-control {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+
+  input,
+  select {
+    height: 38px;
+    padding: 0 10px;
+    border: 1px solid var(--c-borde);
+    border-radius: 8px;
+    font: inherit;
+    font-size: 13.5px;
+  }
+
+  .acciones {
+    grid-column: 1 / -1;
+  }
+}
+
+.filtros {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.grupo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.filtro {
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--c-borde);
+  border-radius: 999px;
+  background: var(--c-superficie);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--c-azul);
+  }
+}
+
+.filtro--activo {
+  background: var(--c-azul);
+  border-color: var(--c-azul);
+  color: #fff;
+}
+
+.fila--critica td:first-child {
+  box-shadow: inset 4px 0 0 var(--c-critico);
+}
+
+.fila--vencida {
+  background: #fff8f0;
+}
+
+.critico {
+  margin-left: 4px;
+
+  .icono {
+    font-size: 15px;
+  }
+}
+
+.vencido {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--c-critico);
+  font-weight: 600;
+  font-size: 13px;
+
+  .icono {
+    font-size: 17px;
+  }
+}
+
+small {
+  color: var(--c-texto-2);
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.vacio {
+  color: var(--c-texto-2);
+  margin: 0;
+}
+
+.alerta {
+  margin-bottom: 14px;
+}

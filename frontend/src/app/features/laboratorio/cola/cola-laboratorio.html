@@ -1,0 +1,103 @@
+<div class="cabecera-pagina">
+  <h2>Órdenes de laboratorio</h2>
+  <a class="enlace" routerLink="/laboratorio/configuracion"><span class="icono">tune</span> Rangos de referencia y críticos</a>
+</div>
+
+<section class="tarjeta calidad">
+  <div class="calidad__cabecera">
+    <div class="tarjeta__titulo"><span class="icono">verified</span>Control de calidad de hoy</div>
+    @if (!registrandoControl()) {
+      <button type="button" class="btn btn--secundario btn--pequeno" (click)="registrandoControl.set(true)">
+        <span class="icono">add</span>Registrar control</button>
+    }
+  </div>
+  <div class="calidad__areas">
+    @for (a of areas; track a.valor) {
+      @let c = estadoControl(a.valor);
+      <div class="area" [class.area--ok]="c?.aceptado" [class.area--mal]="c && !c.aceptado">
+        <span class="icono">{{ !c ? 'help' : c.aceptado ? 'check_circle' : 'cancel' }}</span>
+        <div>
+          <strong>{{ a.etiqueta }}</strong>
+          <span>{{ !c ? 'Sin control: no se puede validar' : (c.aceptado ? 'Aceptado' : 'Rechazado: validación bloqueada') + ' · ' + (c.registradoEn | date: 'h:mm a') }}</span>
+        </div>
+      </div>
+    }
+  </div>
+  @if (registrandoControl()) {
+    <div class="form-control">
+      <select [ngModel]="control.area" (ngModelChange)="elegirArea($event)" aria-label="Área">
+        @for (a of areas; track a.valor) { <option [value]="a.valor">{{ a.etiqueta }}</option> }
+      </select>
+      <input [(ngModel)]="control.equipo" placeholder="Equipo" aria-label="Equipo" />
+      <input [(ngModel)]="control.niveles" placeholder="Niveles corridos" aria-label="Niveles" />
+      <input [(ngModel)]="control.loteControl" placeholder="Lote del control" aria-label="Lote del control" />
+      <select [(ngModel)]="control.aceptado" aria-label="Resultado del control">
+        <option [ngValue]="true">Aceptado</option>
+        <option [ngValue]="false">Rechazado</option>
+      </select>
+      <input [(ngModel)]="control.observacion" placeholder="Observación (opcional)" aria-label="Observación" />
+      <div class="acciones">
+        <button type="button" class="btn btn--secundario btn--pequeno" (click)="registrandoControl.set(false)">Cancelar</button>
+        <button type="button" class="btn btn--primario btn--pequeno" (click)="guardarControl()">Registrar</button>
+      </div>
+    </div>
+    @if (errorControl()) { <p class="campo__error">{{ errorControl() }}</p> }
+  }
+</section>
+
+<div class="filtros">
+  <div class="grupo" role="group" aria-label="Filtrar por estado">
+    <button type="button" class="filtro" [class.filtro--activo]="!estado()" (click)="filtrar(null, prioridad())">Pendientes</button>
+    @for (e of estados; track e.valor) {
+      <button type="button" class="filtro" [class.filtro--activo]="estado() === e.valor" (click)="filtrar(e.valor, prioridad())">{{ e.etiqueta }}</button>
+    }
+  </div>
+  <div class="grupo" role="group" aria-label="Filtrar por prioridad">
+    <button type="button" class="filtro" [class.filtro--activo]="!prioridad()" (click)="filtrar(estado(), null)">Todas</button>
+    @for (p of prioridades; track p.valor) {
+      <button type="button" class="filtro" [class.filtro--activo]="prioridad() === p.valor" (click)="filtrar(estado(), p.valor)">{{ p.etiqueta }}</button>
+    }
+  </div>
+</div>
+
+@if (error()) {
+  <div class="alerta alerta--error" role="alert"><span class="icono">error</span>{{ error() }}</div>
+}
+
+<section class="tarjeta">
+  @if (ordenes().length) {
+    <div class="tabla-contenedor">
+      <table class="tabla">
+        <thead>
+          <tr><th>Prioridad</th><th>Orden</th><th>Paciente</th><th>Exámenes</th><th>Estado</th><th>Tiempo</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (o of ordenes(); track o.id) {
+            <tr [class.fila--vencida]="o.tatVencido" [class.fila--critica]="o.tieneCriticos">
+              <td><span class="chip" [class]="'chip ' + (o.prioridad === 'URGENTE' ? 'chip--critico' : o.prioridad === 'HOSPITALIZADO' ? 'chip--alerta' : 'chip--info')">{{ o.prioridadDescripcion }}</span></td>
+              <td class="nowrap"><strong>{{ o.numero }}</strong><br /><small>{{ o.ordenadaEn | date: 'dd/MM h:mm a' }}</small></td>
+              <td>{{ o.paciente.nombreCompleto }}<br /><small>{{ o.paciente.edad !== null ? o.paciente.edad + ' años · ' : '' }}{{ o.medicoNombre }}</small></td>
+              <td>{{ o.examenes.join(', ') }}</td>
+              <td>
+                <span class="chip" [class]="'chip ' + claseEstado(o.estado)">{{ o.estadoDescripcion }}</span>
+                @if (o.tieneCriticos) { <span class="chip chip--critico critico"><span class="icono">priority_high</span>Crítico</span> }
+              </td>
+              <td class="nowrap">
+                @if (o.estado === 'VALIDADA') {
+                  <small>Validada {{ o.validadaEn | date: 'h:mm a' }}</small>
+                } @else if (o.tatVencido) {
+                  <span class="vencido"><span class="icono">timer_off</span>TAT excedido</span>
+                } @else {
+                  <small>Quedan {{ minutosRestantes(o) }} min</small>
+                }
+              </td>
+              <td><a class="btn btn--secundario btn--pequeno" [routerLink]="['/laboratorio/ordenes', o.id]">Abrir</a></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else {
+    <p class="vacio">{{ cargando() ? 'Cargando…' : 'No hay órdenes con estos filtros.' }}</p>
+  }
+</section>

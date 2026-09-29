@@ -8,6 +8,7 @@ import co.edu.ucentral.clinica.historia.EvaluadorSignos;
 import co.edu.ucentral.clinica.historia.Medicamento;
 import co.edu.ucentral.clinica.historia.Prescripcion;
 import co.edu.ucentral.clinica.historia.RegistroSignos;
+import co.edu.ucentral.clinica.laboratorio.dto.LabDtos;
 import co.edu.ucentral.clinica.pacientes.dto.PacienteResumenDto;
 
 import java.math.BigDecimal;
@@ -111,14 +112,14 @@ public final class HistoriaDtos {
      * RFMT-002: lo que el médico necesita ver en los primeros minutos, en una sola vista.
      *
      * @param alertas            resumen de lo crítico (alergias severas, signos críticos, triage alto)
-     * @param resultadosRecientes laboratorio e imágenes: se integran en la Fase 5
+     * @param resultadosRecientes últimos resultados de laboratorio validados, con semáforo
      */
     public record ResumenClinicoDto(PacienteResumenDto paciente, List<AntecedenteDto> alergias,
                                     List<MedicamentoActualDto> medicamentosActuales,
                                     List<DiagnosticoActivoDto> diagnosticosActivos,
                                     List<AntecedenteDto> antecedentesQuirurgicos, List<AntecedenteDto> otrosAntecedentes,
                                     SignosDto ultimosSignos, TriageActualDto triage, List<String> alertas,
-                                    List<Object> resultadosRecientes) {
+                                    List<LabDtos.ResultadoRecienteDto> resultadosRecientes) {
     }
 
     /** Resumen de una consulta para el historial (RFMT-009). */

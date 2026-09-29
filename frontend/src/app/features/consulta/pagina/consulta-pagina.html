@@ -104,6 +104,10 @@
       </section>
 
       <section class="tarjeta">
+        <app-ordenes-consulta [pacienteId]="c.paciente.id" [consultaId]="c.id" [editable]="editable()" />
+      </section>
+
+      <section class="tarjeta">
         <div class="tarjeta__titulo"><span class="icono">checklist</span>Plan y conducta</div>
         <textarea class="area" rows="3" [(ngModel)]="notas.plan" (ngModelChange)="marcarCambio()" [readonly]="!editable()"
           placeholder="Tratamiento, recomendaciones, exámenes a solicitar, control" aria-label="Plan y conducta"></textarea>

@@ -1,3 +1,4 @@
+import { ResultadoReciente } from '../laboratorio/laboratorio.models';
 import { PacienteResumen } from '../pacientes/pacientes.models';
 
 export type TipoAntecedente = 'ALERGIA' | 'MEDICAMENTO_ACTUAL' | 'PATOLOGICO' | 'QUIRURGICO' | 'FAMILIAR' | 'OTRO';
@@ -122,7 +123,7 @@ export interface ResumenClinico {
   ultimosSignos: Signos | null;
   triage: { nivel: number; descripcion: string; sintomaPrincipal: string; fecha: string } | null;
   alertas: string[];
-  resultadosRecientes: unknown[];
+  resultadosRecientes: ResultadoReciente[];
 }
 
 export interface ConsultaHistorial {

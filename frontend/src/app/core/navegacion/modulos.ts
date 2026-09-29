@@ -50,7 +50,7 @@ export const MODULOS: Modulo[] = [
     ruta: 'laboratorio',
     titulo: 'Laboratorio clínico',
     icono: 'science',
-    descripcion: 'Órdenes, muestras, resultados y valores críticos',
+    descripcion: 'Cola de órdenes, muestras, resultados, control de calidad y valores críticos',
     roles: ['LABORATORIO'],
   },
   {

@@ -1,7 +1,9 @@
-import { DatePipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, input } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
 import { ROMANO } from '../../admisiones/admisiones.models';
+import { claseInterpretacion } from '../../laboratorio/laboratorio.models';
 import { ResumenClinico } from '../consulta.models';
 
 /**
@@ -10,7 +12,7 @@ import { ResumenClinico } from '../consulta.models';
  */
 @Component({
   selector: 'app-resumen-clinico',
-  imports: [DatePipe],
+  imports: [DatePipe, DecimalPipe, RouterLink],
   template: `
     @let r = resumen();
     @if (r.alertas.length) {
@@ -70,7 +72,16 @@ import { ResumenClinico } from '../consulta.models';
 
     <section class="bloque">
       <h4><span class="icono">science</span>Resultados recientes</h4>
-      <p class="vacio">Laboratorio e imágenes se integran en la Fase 5.</p>
+      @for (x of r.resultadosRecientes; track $index) {
+        <a class="resultado" [routerLink]="['/laboratorio/ordenes', x.ordenId]">
+          <span>{{ x.analito }}</span>
+          <strong [class]="'nivel--' + x.interpretacion.toLowerCase()">{{ x.valor | number: '1.' + x.decimales + '-' + x.decimales }} {{ x.unidad }}</strong>
+          <span class="chip" [class]="'chip ' + clase(x.interpretacion)">{{ x.interpretacionDescripcion }}</span>
+          <small>{{ x.rangoTexto }} · {{ x.fecha | date: 'dd/MM' }}</small>
+        </a>
+      } @empty {
+        <p class="vacio">Sin resultados de laboratorio validados. Las imágenes se integran en la Fase 7.</p>
+      }
     </section>
   `,
   styles: `
@@ -89,9 +100,16 @@ import { ResumenClinico } from '../consulta.models';
     .origen { color: var(--c-texto-3) !important; }
     .triage-linea { flex-wrap: nowrap; }
     .vacio { margin: 0; color: var(--c-texto-3); font-size: 13px; }
+    .resultado { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 2px 8px; padding: 6px 0;
+      border-bottom: 1px solid var(--c-borde); color: inherit; font-size: 13px; }
+    .resultado small { grid-column: 1 / -1; color: var(--c-texto-3); font-size: 11.5px; }
+    .resultado .chip { padding: 2px 8px; font-size: 11px; }
+    .nivel--alto, .nivel--bajo { color: var(--c-alerta); }
+    .nivel--critico_alto, .nivel--critico_bajo { color: var(--c-critico); }
   `,
 })
 export class ResumenClinicoPanel {
   readonly resumen = input.required<ResumenClinico>();
   protected readonly romano = ROMANO;
+  protected readonly clase = claseInterpretacion;
 }

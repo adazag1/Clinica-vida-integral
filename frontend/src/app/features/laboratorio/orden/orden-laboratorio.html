@@ -1,0 +1,259 @@
+<a class="volver" [routerLink]="esLaboratorio() ? '/laboratorio' : (orden()?.consultaId ? '/consulta/' + orden()?.consultaId : '/consulta')">
+  <span class="icono">arrow_back</span> {{ esLaboratorio() ? 'Órdenes de laboratorio' : 'Volver' }}
+</a>
+
+@if (error() && !orden()) {
+  <div class="alerta alerta--error" role="alert"><span class="icono">error</span>{{ error() }}</div>
+}
+
+@if (orden(); as o) {
+  <section class="tarjeta encabezado">
+    <span class="avatar"><span class="icono">person</span></span>
+    <div class="encabezado__datos">
+      <h2>{{ o.paciente.nombreCompleto }}</h2>
+      <dl>
+        <div><dt>Edad</dt><dd>{{ o.paciente.edad !== null ? o.paciente.edad + ' años' : '—' }}{{ o.contexto.sexo ? ' · ' + o.contexto.sexo.toLowerCase() : '' }}</dd></div>
+        <div><dt>ID paciente</dt><dd>{{ o.paciente.tipoDocumento }} {{ o.paciente.numeroDocumento }}</dd></div>
+        <div><dt>Médico solicitante</dt><dd>{{ o.medicoNombre }}</dd></div>
+        <div><dt>Fecha de muestra</dt><dd>
+          @if (o.muestraTomadaEn) {
+            <span class="icono">calendar_today</span>{{ o.muestraTomadaEn | date: 'dd/MM/yyyy' }}
+            <span class="icono">schedule</span>{{ o.muestraTomadaEn | date: 'h:mm a' }}
+          } @else { — }
+        </dd></div>
+      </dl>
+    </div>
+    <div class="encabezado__estado">
+      <span class="chip" [class]="'chip ' + claseEstado(o.estado)">{{ o.estadoDescripcion }}</span>
+      <span class="chip" [class]="'chip ' + (o.prioridad === 'URGENTE' ? 'chip--critico' : 'chip--info')">{{ o.prioridadDescripcion }}</span>
+      @if (o.tatVencido) { <span class="chip chip--critico"><span class="icono">timer_off</span>TAT excedido</span> }
+    </div>
+  </section>
+
+  @if (aviso()) {
+    <div class="alerta alerta--exito" role="status"><span class="icono">check_circle</span>{{ aviso() }}</div>
+  }
+  @if (error()) {
+    <div class="alerta alerta--error" role="alert"><span class="icono">error</span>{{ error() }}</div>
+  }
+
+  <div class="fila">
+    <section class="tarjeta">
+      <div class="tarjeta__titulo"><span class="icono">assignment</span>Órdenes de examen</div>
+      <p class="numero">Orden N.º {{ o.numero }} · {{ o.ordenadaEn | date: 'dd/MM/yyyy h:mm a' }}</p>
+      <ul class="examenes">
+        @for (e of o.examenes; track e.id) {
+          <li><span class="icono">science</span><span><strong>{{ e.nombre }}</strong><small>{{ e.areaDescripcion }} · {{ e.tipoMuestra }}</small></span>
+            <span class="chip" [class]="'chip ' + (o.estado === 'VALIDADA' ? 'chip--normal' : 'chip--primario')">{{ o.estado === 'VALIDADA' ? 'Procesado' : 'Requerido' }}</span></li>
+        }
+      </ul>
+      @if (o.indicaciones) { <p class="nota"><strong>Indicaciones:</strong> {{ o.indicaciones }}</p> }
+    </section>
+
+    <section class="tarjeta">
+      <div class="tarjeta__titulo"><span class="icono">labs</span>Estado de muestra</div>
+      <ol class="pasos">
+        @for (p of pasos(); track p.titulo) {
+          <li [class.hecho]="p.hecho" [class.rechazo]="p.rechazo">
+            <span class="paso__icono"><span class="icono">{{ p.icono }}</span></span>
+            <strong>{{ p.titulo }}</strong>
+            <small>{{ p.fecha ? (p.fecha | date: 'dd/MM/yyyy h:mm a') : '—' }}</small>
+          </li>
+        }
+      </ol>
+      @if (o.estado === 'RECHAZADA') {
+        <div class="alerta alerta--error"><span class="icono">cancel</span>{{ o.motivoRechazoDescripcion }}{{ o.detalleRechazo ? ': ' + o.detalleRechazo : '' }}</div>
+      }
+
+      @if (accion() === 'muestra') {
+        <div class="form-linea">
+          <input [(ngModel)]="muestra.tomadaPor" placeholder="Quién tomó la muestra" aria-label="Quién tomó la muestra" />
+          <input type="datetime-local" [(ngModel)]="muestra.tomadaEn" aria-label="Hora de toma (opcional)" />
+          <button type="button" class="btn btn--secundario btn--pequeno" (click)="abrir(null)">Cancelar</button>
+          <button type="button" class="btn btn--primario btn--pequeno" (click)="recibirMuestra()" [disabled]="ocupado()">Registrar</button>
+        </div>
+      } @else if (accion() === 'rechazar') {
+        <div class="form-linea">
+          <select [(ngModel)]="rechazo.motivo" aria-label="Motivo de rechazo">
+            @for (m of motivosRechazo; track m.valor) { <option [value]="m.valor">{{ m.etiqueta }}</option> }
+          </select>
+          <input [(ngModel)]="rechazo.detalle" placeholder="Detalle (opcional)" aria-label="Detalle" />
+          <button type="button" class="btn btn--secundario btn--pequeno" (click)="abrir(null)">Cancelar</button>
+          <button type="button" class="btn btn--peligro btn--pequeno" (click)="rechazar()" [disabled]="ocupado()">Rechazar muestra</button>
+        </div>
+      } @else {
+        <div class="acciones acciones--izq">
+          @if (o.estado === 'ORDENADA' && puedeTomarMuestra()) {
+            <button type="button" class="btn btn--primario btn--pequeno" (click)="abrir('muestra')"><span class="icono">labs</span>Recibir muestra</button>
+          }
+          @if (editable()) {
+            <button type="button" class="btn btn--peligro btn--pequeno" (click)="abrir('rechazar')"><span class="icono">cancel</span>Rechazar muestra</button>
+          }
+          @if (o.estado === 'RECHAZADA' && puedeTomarMuestra()) {
+            <button type="button" class="btn btn--secundario btn--pequeno" (click)="nuevaMuestra()">Solicitar nueva muestra</button>
+          }
+        </div>
+      }
+    </section>
+  </div>
+
+  <section class="tarjeta">
+    <div class="tarjeta__titulo"><span class="icono">bar_chart</span>Resultados</div>
+    @for (e of o.examenes; track e.id) {
+      <div class="examen">
+        <div class="examen__cabecera">
+          <h4>{{ e.nombre }}</h4>
+          @if (editable()) {
+            <div class="trazabilidad" title="Trazabilidad técnica (RFLC-008)">
+              <input [(ngModel)]="trazabilidad[e.id].equipo" placeholder="Equipo" aria-label="Equipo" />
+              <input [(ngModel)]="trazabilidad[e.id].loteReactivo" placeholder="Lote de reactivo" aria-label="Lote de reactivo" />
+              <input [(ngModel)]="trazabilidad[e.id].calibracion" placeholder="Calibración (fecha)" aria-label="Calibración" />
+            </div>
+          } @else if (e.equipo) {
+            <small>{{ e.equipo }} · lote {{ e.loteReactivo }} · calibración {{ e.calibracion }}</small>
+          }
+        </div>
+        <div class="tabla-contenedor">
+          <table class="tabla">
+            <thead><tr><th>Examen</th><th>Resultado</th><th>Unidad</th><th>Rango de referencia</th><th>Estado</th><th>Previo</th><th></th></tr></thead>
+            <tbody>
+              @for (r of e.resultados; track r.analitoId) {
+                <tr>
+                  <td>{{ r.nombre }}</td>
+                  <td class="valor" [class]="'valor valor--' + (r.interpretacion ?? 'SIN').toLowerCase()">
+                    @if (editable() && r.valor === null) {
+                      <input type="number" step="any" [(ngModel)]="valores[r.analitoId]" [attr.aria-label]="'Valor de ' + r.nombre" />
+                    } @else if (r.valor !== null) {
+                      <strong>{{ r.valor | number: '1.' + r.decimales + '-' + r.decimales }}</strong>
+                      @if (flecha(r)) { <span class="icono">{{ flecha(r) }}</span> }
+                    } @else { — }
+                  </td>
+                  <td>{{ r.unidad }}</td>
+                  <td>{{ r.rangoTexto }}</td>
+                  <td>
+                    @if (r.interpretacion) {
+                      <span class="chip" [class]="'chip ' + claseInterp(r.interpretacion)">{{ r.interpretacionDescripcion }}</span>
+                    } @else {
+                      <span class="chip chip--info">{{ o.estado === 'RECHAZADA' ? 'Sin muestra' : 'Pendiente' }}</span>
+                    }
+                    @if (r.repeticiones) { <small class="rep">Repetido {{ r.repeticiones }}×</small> }
+                  </td>
+                  <td class="previo">
+                    @if (r.valorPrevio !== null) {
+                      {{ r.valorPrevio | number: '1.' + r.decimales + '-' + r.decimales }}
+                      <small [class.delta-alerta]="r.alertaDelta">({{ r.delta! > 0 ? '+' : '' }}{{ r.delta | number: '1.0-1' }} %)</small>
+                    } @else { — }
+                  </td>
+                  <td>
+                    @if (editable() && r.valor !== null && o.estado === 'EN_PROCESO' && !esRepeticion(r)) {
+                      <button type="button" class="enlace" (click)="abrir({ repetir: r })">Repetir</button>
+                    }
+                  </td>
+                </tr>
+                @if (esRepeticion(r)) {
+                  <tr class="fila-repeticion">
+                    <td colspan="7">
+                      <div class="form-linea">
+                        <span>Repetir {{ r.nombre }}:</span>
+                        <input type="number" step="any" [(ngModel)]="repeticion.valor" aria-label="Nuevo valor" class="corto" />
+                        <select [(ngModel)]="repeticion.motivo" aria-label="Motivo">
+                          @for (m of motivosReproceso; track m.valor) { <option [value]="m.valor">{{ m.etiqueta }}</option> }
+                        </select>
+                        <input [(ngModel)]="repeticion.detalle" placeholder="Detalle (opcional)" aria-label="Detalle" />
+                        <button type="button" class="btn btn--secundario btn--pequeno" (click)="abrir(null)">Cancelar</button>
+                        <button type="button" class="btn btn--primario btn--pequeno" (click)="repetir(r)" [disabled]="ocupado()">Registrar</button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+                @for (rp of r.reprocesos; track rp.fecha) {
+                  <tr class="fila-reproceso"><td colspan="7"><span class="icono">replay</span>{{ rp.fecha | date: 'h:mm a' }} · {{ rp.usuario }} ·
+                    {{ rp.valorAnterior }} → {{ rp.valorNuevo }} · {{ rp.motivoDescripcion }}{{ rp.detalle ? ': ' + rp.detalle : '' }}</td></tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+    <p class="nota">Valores de referencia según edad y sexo del paciente.</p>
+  </section>
+
+  <div class="fila">
+    @if (o.estado === 'EN_PROCESO' && esLaboratorio()) {
+      <section class="tarjeta">
+        <div class="tarjeta__titulo"><span class="icono">rule</span>Antes de validar</div>
+        @for (p of o.pendientesValidacion; track p) {
+          <p class="pendiente"><span class="icono">radio_button_unchecked</span>{{ p }}</p>
+        } @empty {
+          <p class="listo"><span class="icono">check_circle</span>Cumple las reglas de liberación.</p>
+        }
+        @for (a of o.advertencias; track a) {
+          <p class="advertencia"><span class="icono">warning</span>{{ a }}</p>
+        }
+        @for (c of o.controles; track c.area) {
+          <p class="control" [class.control--mal]="!c.aceptado"><span class="icono">{{ c.aceptado ? 'verified' : 'gpp_bad' }}</span>
+            Control {{ c.areaDescripcion }}: {{ c.aceptado === null ? 'sin registrar hoy' : c.aceptado ? 'aceptado' : 'rechazado' }}</p>
+        }
+      </section>
+    }
+    <section class="tarjeta">
+      <div class="tarjeta__titulo"><span class="icono">clinical_notes</span>Contexto clínico</div>
+      <dl class="contexto">
+        <div><dt>Motivo de consulta</dt><dd>{{ o.contexto.motivoConsulta ?? '—' }}</dd></div>
+        <div><dt>Diagnósticos</dt><dd>{{ o.contexto.diagnosticos.length ? o.contexto.diagnosticos.join('; ') : '—' }}</dd></div>
+        <div><dt>Alergias</dt><dd [class.alergia]="o.contexto.alergias.length">{{ o.contexto.alergias.length ? o.contexto.alergias.join(', ') : 'Ninguna registrada' }}</dd></div>
+      </dl>
+      @if (o.criticoContacto) {
+        <p class="alerta alerta--aviso"><span class="icono">call</span>Valor crítico informado a {{ o.criticoContacto }} ({{ o.criticoMedio }}) · {{ o.criticoNotificadoEn | date: 'dd/MM h:mm a' }}</p>
+      }
+    </section>
+  </div>
+
+  <details class="tarjeta historial">
+    <summary>Historial de la orden</summary>
+    <ul>
+      @for (h of o.historial; track $index) {
+        <li><strong>{{ h.fecha | date: 'dd/MM h:mm a' }}</strong> · {{ h.usuario }} · {{ h.accion }}{{ h.detalle ? ': ' + h.detalle : '' }}</li>
+      }
+    </ul>
+  </details>
+
+  @if (editable()) {
+    <div class="barra-acciones">
+      <button type="button" class="btn btn--secundario" (click)="guardar()" [disabled]="ocupado()"><span class="icono">save</span>Guardar</button>
+      <button type="button" class="btn btn--primario" (click)="abrir('validar')" [disabled]="ocupado() || o.estado !== 'EN_PROCESO' || o.pendientesValidacion.length > 0"
+        [title]="o.pendientesValidacion.length ? 'Complete lo pendiente antes de validar' : ''">
+        <span class="icono">task_alt</span>Validar resultados</button>
+    </div>
+  }
+
+  @if (accion() === 'validar') {
+    <div class="velo" (click)="abrir(null)"></div>
+    <div class="dialogo tarjeta" role="dialog" aria-modal="true" aria-labelledby="titulo-validar">
+      <h3 id="titulo-validar"><span class="icono">task_alt</span>Validar y publicar resultados</h3>
+      @if (o.tieneCriticos) {
+        <div class="alerta alerta--error"><span class="icono">priority_high</span>Hay valores críticos. Informe al médico tratante antes de liberar y registre a quién.</div>
+        <div class="campo">
+          <label for="contacto">Persona contactada</label>
+          <div class="campo__control"><input id="contacto" [(ngModel)]="validacion.contacto" [placeholder]="o.medicoNombre" /></div>
+        </div>
+        <div class="campo">
+          <label for="medio">Medio</label>
+          <div class="campo__control">
+            <select id="medio" [(ngModel)]="validacion.medio">
+              <option>Llamada telefónica</option><option>En persona</option><option>Mensaje institucional</option>
+            </select>
+          </div>
+        </div>
+      } @else {
+        <p>Los resultados quedarán visibles para {{ o.medicoNombre }} y en la historia clínica del paciente.</p>
+      }
+      @if (error()) { <div class="alerta alerta--error"><span class="icono">error</span>{{ error() }}</div> }
+      <div class="acciones">
+        <button type="button" class="btn btn--secundario" (click)="abrir(null)">Cancelar</button>
+        <button type="button" class="btn btn--primario" (click)="validar()" [disabled]="ocupado()">Validar</button>
+      </div>
+    </div>
+  }
+}

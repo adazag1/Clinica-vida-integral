@@ -113,6 +113,22 @@ Con el perfil `local` se crean 4 profesionales de prueba; el usuario `medico` es
 - **Historia clínica** (`/historia/<paciente>`): resumen, antecedentes (se inactivan con motivo, nunca se
   borran), línea de tiempo de consultas y signos registrados. Solo la ven médicos, enfermería y auditoría.
 
+## Laboratorio clínico (Fase 5)
+
+- El **médico ordena** exámenes desde la consulta (urgente, hospitalizado o ambulatorio) y ve el estado de
+  cada orden: pendiente de muestra, muestra recibida, en proceso, validada o muestra rechazada.
+- El **laboratorio** (usuario `laboratorio`) trabaja una cola con los urgentes primero y alerta de tiempo de
+  respuesta (TAT) excedido. La pantalla de la orden sigue el mockup: exámenes, estado de la muestra y resultados.
+- Cada resultado se interpreta con el **rango de su sexo y edad** (normal, bajo/alto, crítico) y se compara con
+  el resultado previo del paciente (**delta check**). También se revisa la coherencia hemoglobina/hematocrito.
+- **No se libera un resultado** sin: control de calidad aceptado hoy en el área, equipo/lote de reactivo/
+  calibración, datos completos del paciente y de la muestra, y —si hay un valor crítico— haberlo repetido para
+  confirmarlo y registrado a quién se informó. Cambiar un valor ya registrado exige "Repetir" con motivo.
+- Al validar, el médico recibe el aviso (y uno especial si hay un **valor crítico**); los resultados aparecen
+  con semáforo en su resumen clínico. Las muestras rechazadas llevan motivo estructurado y avisan al médico.
+- **Rangos configurables** en *Laboratorio → Rangos de referencia y críticos*, sin programar. Los iniciales son
+  de adultos de referencia general: el laboratorio debe ajustarlos a su método y población.
+
 ## Despliegue en Azure
 
 | | Dirección |
@@ -161,7 +177,7 @@ Azure la vuelve a encender sola a los 7 días. Para borrar todo: `az group delet
 - [x] **Fase 2** — Pacientes, admisiones y triage (RFADM-002 a RFADM-013)
 - [x] **Fase 3** — Agendamiento (RFAGE-002 a RFAGE-015) y notificaciones internas
 - [x] **Fase 4** — Consulta médica e historia clínica (RFMT-002, 003, 007 a 012)
-- [ ] Fase 5 — Órdenes, laboratorio y notificaciones
+- [x] **Fase 5** — Órdenes, laboratorio y notificaciones (RFLC-002 a 015, RFMT-004 a 006)
 - [ ] Fase 6 — Enfermería
 - [ ] Fase 7 — Radiología, patología y gestión documental
 - [ ] Fase 8 — Facturación y auditoría clínica

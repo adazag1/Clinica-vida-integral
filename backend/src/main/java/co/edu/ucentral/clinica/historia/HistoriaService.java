@@ -20,6 +20,8 @@ import co.edu.ucentral.clinica.historia.dto.HistoriaDtos.SignosDto;
 import co.edu.ucentral.clinica.historia.dto.HistoriaDtos.TriageActualDto;
 import co.edu.ucentral.clinica.historia.dto.HistoriaSolicitudes.AntecedenteRequest;
 import co.edu.ucentral.clinica.historia.dto.HistoriaSolicitudes.SignosRequest;
+import co.edu.ucentral.clinica.laboratorio.LaboratorioService;
+import co.edu.ucentral.clinica.laboratorio.dto.LabDtos.ResultadoRecienteDto;
 import co.edu.ucentral.clinica.notificaciones.NotificacionService;
 import co.edu.ucentral.clinica.pacientes.Normalizador;
 import co.edu.ucentral.clinica.pacientes.Paciente;
@@ -58,13 +60,16 @@ public class HistoriaService {
     private final TriageRepository triages;
     private final EvaluadorSignos evaluador;
     private final NotificacionService notificaciones;
+    private final LaboratorioService laboratorio;
     private final AuditorAware<String> auditor;
 
     public HistoriaService(PacienteService pacienteService, AntecedenteRepository antecedentes,
                            RegistroSignosRepository signos, ConsultaRepository consultas,
                            DiagnosticoRepository diagnosticos, MedicamentoRepository medicamentos,
                            EpisodioRepository episodios, TriageRepository triages, EvaluadorSignos evaluador,
-                           NotificacionService notificaciones, AuditorAware<String> auditor) {
+                           NotificacionService notificaciones, LaboratorioService laboratorio,
+                           AuditorAware<String> auditor) {
+        this.laboratorio = laboratorio;
         this.pacienteService = pacienteService;
         this.antecedentes = antecedentes;
         this.signos = signos;
@@ -226,11 +231,18 @@ public class HistoriaService {
         triage.filter(t -> t.getNivelAsignado() <= 2)
                 .ifPresent(t -> alertas.add(NivelTriage.descripcion(t.getNivelAsignado())));
 
+        // Resultados críticos de la última semana (RFMT-004): el médico no debe buscarlos
+        List<ResultadoRecienteDto> resultados = laboratorio.resultadosRecientes(pacienteId);
+        resultados.stream()
+                .filter(r -> r.interpretacion().startsWith("CRITICO") && r.fecha().isAfter(ahora.minus(Duration.ofDays(7))))
+                .forEach(r -> alertas.add("Resultado crítico: " + r.analito() + " " + r.valor().stripTrailingZeros().toPlainString()
+                        .replace('.', ',') + " " + r.unidad()));
+
         return new ResumenClinicoDto(PacienteResumenDto.de(paciente), alergias, meds, dx,
                 porTipo.getOrDefault(Antecedente.Tipo.QUIRURGICO, List.of()), otros, ultimos,
                 triage.map(t -> new TriageActualDto(t.getNivelAsignado(), NivelTriage.descripcion(t.getNivelAsignado()),
                         t.getSintomaPrincipal(), t.getModificadoEn())).orElse(null),
-                alertas, List.of());
+                alertas, resultados);
     }
 
     /** Triage del episodio abierto del paciente, si lo tiene. */
