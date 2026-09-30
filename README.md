@@ -27,6 +27,26 @@ clinica-vida-integral/
 | Secretos | `application-local.yml` | Configuración de la aplicación en App Service |
 | Monitoreo | consola | Application Insights |
 
+## Cómo probar la aplicación (sin instalar nada)
+
+Abra **https://clinicavidaweb.z47.web.core.windows.net** en el navegador. La aplicación publicada usa la base de datos
+de Azure: no hace falta Docker ni clonar el repositorio. Pida la contraseña de los usuarios de prueba al responsable del
+despliegue (no está en este repositorio). Un recorrido sugerido:
+
+| Usuario | Qué probar |
+|---|---|
+| `admisiones` | Registrar un paciente, abrir un episodio de urgencias y hacer el triage |
+| `agendamiento` | Agendar una cita y ver la disponibilidad de los médicos |
+| `medico` | Atender al paciente: historia clínica, diagnóstico, fórmula, órdenes de laboratorio e imágenes, firmar la consulta; ver las **alertas de IA** |
+| `enfermeria` | Registrar signos vitales (una presión de 190/120 dispara una alerta crítica) y administrar medicamentos |
+| `laboratorio` | Recibir la muestra, registrar y validar resultados (un valor crítico avisa al médico) |
+| `radiologia` / `patologia` | Informar un estudio de imágenes o un caso de patología |
+| `facturacion` / `auditoria` | Revisar la cuenta que se generó sola, auditarla y facturarla |
+| `archivo` | Buscar documentos clínicos y atender solicitudes |
+| `directivo` | **Indicadores** (tablero del CEO y reporte del CFO), **Motor de IA** y cartera |
+
+Todos los datos deben ser ficticios.
+
 ## Cómo ejecutar en local
 
 Requisitos: JDK 21, Node 22+, Docker Desktop.
