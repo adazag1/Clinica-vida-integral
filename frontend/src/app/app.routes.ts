@@ -3,24 +3,11 @@ import { Routes } from '@angular/router';
 import { autenticadoGuard, invitadoGuard, rolGuard } from './core/auth/auth.guards';
 import { Rol } from './core/auth/auth.models';
 import { MODULOS } from './core/navegacion/modulos';
-import { EnConstruccion } from './features/en-construccion/en-construccion';
-
-/** Fase en la que se construye cada módulo pendiente (ver README). */
-const FASES: Record<string, string> = {
-  reportes: 'Fase 10',
-};
 
 const rolesDe = (ruta: string) => MODULOS.find((m) => m.ruta === ruta)?.roles ?? [];
 
 /** RNFMT-003: la historia clínica solo la ven el personal asistencial y auditoría. */
 const HISTORIA: Rol[] = ['MEDICO', 'ENFERMERIA', 'AUDITORIA'];
-
-const modulosPendientes: Routes = MODULOS.filter((m) => FASES[m.ruta]).map((m) => ({
-  path: m.ruta,
-  component: EnConstruccion,
-  canActivate: [rolGuard],
-  data: { roles: m.roles, titulo: m.titulo, fase: FASES[m.ruta] },
-}));
 
 export const routes: Routes = [
   {
@@ -316,7 +303,12 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/registro-accesos/registro-accesos').then((m) => m.RegistroAccesos),
       },
-      ...modulosPendientes,
+      {
+        path: 'reportes',
+        canActivate: [rolGuard],
+        data: { roles: rolesDe('reportes') },
+        loadComponent: () => import('./features/reportes/reportes').then((m) => m.Reportes),
+      },
     ],
   },
   { path: '**', redirectTo: '' },

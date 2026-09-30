@@ -242,6 +242,26 @@ cada paciente con un seudónimo (HMAC con sal secreta `IA_DATASET_SAL`), sexo, g
 descarga queda auditada. *Antes de compartirlo fuera de la clínica debe aprobarlo el oficial de protección de datos
 (Ley 1581 de 2012).*
 
+## Indicadores de dirección (Fase 10)
+
+Página **Indicadores** (usuario `directivo`; también el administrador):
+
+- **Diagnóstico (CEO, US 5.1)**: tiempo promedio de diagnóstico de enfermedades críticas en los últimos 30 días frente a
+  la línea base y la meta (−30 % en 18 meses), con mediana, percentil 90, evolución mensual, dónde se va el tiempo
+  (llegada → médico, laboratorio, imágenes, patología), desglose por diagnóstico y últimos casos. Se renueva cada minuto.
+  *Caso* = consulta firmada con un diagnóstico crítico confirmado (prefijos CIE-10 configurables); el tiempo va desde la
+  llegada del paciente (admisión) hasta la firma del diagnóstico.
+- **Costos, capacidad y ROI (CFO, US 5.2)**: reporte mensual que cruza el costo administrativo (meta −25 % en 24
+  meses) con las atenciones por médico (meta +15 %), lo facturado y recaudado, y el porcentaje de cargos generados
+  automáticamente. **ROI**: beneficio neto = ahorro frente a la línea base + margen de las atenciones adicionales −
+  costo de la plataforma; se acumula contra la inversión (750.000 USD) y se proyecta a 36 meses con el promedio de
+  los últimos tres meses. Exportable a Excel (CSV) e imprimible a PDF.
+- **Metas y costos**: la dirección financiera registra cada mes los costos por categoría (personal administrativo,
+  archivo físico, transcripción, estudios duplicados, papelería, otros y plataforma) y ajusta líneas base y metas.
+- *Las líneas base vienen como **valores de prueba** y el tablero lo advierte hasta que se reemplacen: el Product
+  Owner documenta los tiempos reales previos (tarea 5.1.2) y finanzas los costos. Los costos no salen de otro sistema:
+  se registran a mano cada mes.*
+
 ## Despliegue en Azure
 
 | | Dirección |
@@ -295,4 +315,4 @@ Azure la vuelve a encender sola a los 7 días. Para borrar todo: `az group delet
 - [x] **Fase 7** — Imágenes diagnósticas, patología y gestión documental (RFRAD, RFPAT, RFGAC)
 - [x] **Fase 8** — Facturación y auditoría clínica (RFRC-002 a 014, RFAU-002 a 009)
 - [x] **Fase 9** — Motor de IA: reglas clínicas con retroalimentación, asistente Azure OpenAI (apagado) y dataset anonimizado
-- [ ] Fase 10 — Dashboards CEO/CFO y despliegue final en Azure
+- [x] **Fase 10** — Tablero clínico del CEO, reporte financiero y de ROI del CFO, y despliegue final en Azure
