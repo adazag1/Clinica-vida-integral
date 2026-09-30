@@ -153,8 +153,17 @@ class ImagenesIntegrationTest {
                 .andExpect(status().is(422)).andExpect(jsonPath("$.codigo").value("ESTUDIO_BLOQUEADO"));
         mvc.perform(get("/api/notificaciones").header("Authorization", "Bearer " + token("admisiones")))
                 .andExpect(jsonPath("$.notificaciones[*].titulo").value(hasItem(containsString("bloqueado"))));
-        enviar(post("/api/imagenes/estudios/" + estudio + "/desbloquear"), rad, "{\"motivo\":\"Admisiones corrigió los datos del paciente\"}")
-                .andExpect(jsonPath("$.resumen.estado").value("ADQUIRIDO"));
+        String desbloqueado = enviar(post("/api/imagenes/estudios/" + estudio + "/desbloquear"), rad,
+                        "{\"motivo\":\"Admisiones corrigió los datos del paciente\"}")
+                .andExpect(jsonPath("$.resumen.estado").value("ADQUIRIDO"))
+                .andReturn().getResponse().getContentAsString();
+
+        // La plantilla sin completar no se firma
+        String plantilla = JsonPath.read(desbloqueado, "$.plantilla.hallazgos");
+        enviar(put("/api/imagenes/estudios/" + estudio + "/informe"), rad,
+                new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(java.util.Map.of("hallazgos", plantilla, "impresion", "Normal")));
+        enviar(post("/api/imagenes/estudios/" + estudio + "/firmar"), rad, "{\"password\":\"ClaveTest123*\"}")
+                .andExpect(status().is(422)).andExpect(jsonPath("$.mensaje").value(containsString("plantilla")));
     }
 
     @Test

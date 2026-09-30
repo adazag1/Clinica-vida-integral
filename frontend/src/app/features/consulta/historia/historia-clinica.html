@@ -96,6 +96,48 @@
   </section>
 
   <section class="tarjeta">
+    <div class="titulo-accion">
+      <div class="tarjeta__titulo"><span class="icono">folder_open</span>Documentos</div>
+      <div class="acciones-doc">
+        @if (puedeCargarDocumento()) {
+          <button type="button" class="enlace" (click)="cargandoDocumento.set(true)">+ Registrar documento</button>
+        }
+        @if (puedeSolicitar()) {
+          <button type="button" class="enlace" (click)="solicitarExpediente()">Pedir expediente físico al archivo</button>
+        }
+      </div>
+    </div>
+    @if (avisoDocumentos()) { <p class="aviso-doc">{{ avisoDocumentos() }}</p> }
+    @if (documentos().length) {
+      <div class="tabla-contenedor">
+        <table class="tabla">
+          <thead><tr><th>Fecha</th><th>Documento</th><th>Servicio</th><th>Soporte</th><th></th></tr></thead>
+          <tbody>
+            @for (d of documentos(); track d.id) {
+              <tr>
+                <td class="nowrap">{{ d.fechaDocumento | date: 'dd/MM/yyyy' }}</td>
+                <td><strong>{{ d.titulo }}</strong><br /><small>{{ d.tipoDescripcion }}{{ d.versionActual > 1 ? ' · v' + d.versionActual : '' }}</small></td>
+                <td>{{ d.servicio }}<br /><small>{{ d.profesional ?? '' }}</small></td>
+                <td><small>{{ d.soporte === 'FISICO' ? 'Físico' : 'Digital' }}{{ d.estado !== 'ACTIVO' ? ' · ' + d.estadoDescripcion : '' }}</small></td>
+                <td class="nowrap">
+                  @if (d.enlace) { <a class="enlace" [routerLink]="d.enlace">Original</a> · }
+                  <a class="enlace" [routerLink]="['/documentos', d.id]">Detalle</a>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <p class="vacio">Sin documentos registrados.</p>
+    }
+  </section>
+
+  @if (cargandoDocumento()) {
+    <app-dialogo-carga [paciente]="r.paciente" (registrado)="documentoRegistrado()" (cerrar)="cargandoDocumento.set(false)" />
+  }
+
+  <section class="tarjeta">
     <div class="tarjeta__titulo"><span class="icono">monitoring</span>Signos vitales registrados</div>
     @if (signos().length) {
       <div class="tabla-contenedor">

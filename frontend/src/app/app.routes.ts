@@ -7,7 +7,6 @@ import { EnConstruccion } from './features/en-construccion/en-construccion';
 
 /** Fase en la que se construye cada módulo pendiente (ver README). */
 const FASES: Record<string, string> = {
-  documentos: 'Fase 7',
   facturacion: 'Fase 8',
   'auditoria-clinica': 'Fase 8',
   reportes: 'Fase 10',
@@ -213,6 +212,35 @@ export const routes: Routes = [
             canActivate: [rolGuard],
             data: { roles: ['PATOLOGIA', ...HISTORIA] },
             loadComponent: () => import('./features/patologia/caso/caso-patologia').then((m) => m.CasoPatologia),
+          },
+        ],
+      },
+      {
+        path: 'documentos',
+        canActivate: [rolGuard],
+        data: { roles: [...rolesDe('documentos'), 'MEDICO', 'ENFERMERIA'] },
+        children: [
+          {
+            path: '',
+            loadComponent: () =>
+              import('./features/documentos/buscador/buscador-documentos').then((m) => m.BuscadorDocumentos),
+          },
+          {
+            path: 'solicitudes',
+            loadComponent: () =>
+              import('./features/documentos/solicitudes/solicitudes-archivo').then((m) => m.SolicitudesArchivo),
+          },
+          {
+            path: 'reportes',
+            canActivate: [rolGuard],
+            data: { roles: ['ARCHIVO', 'AUDITORIA', 'DIRECTIVO'] },
+            loadComponent: () =>
+              import('./features/documentos/reportes/reportes-documentales').then((m) => m.ReportesDocumentales),
+          },
+          {
+            path: ':id',
+            loadComponent: () =>
+              import('./features/documentos/detalle/detalle-documento').then((m) => m.DetalleDocumento),
           },
         ],
       },

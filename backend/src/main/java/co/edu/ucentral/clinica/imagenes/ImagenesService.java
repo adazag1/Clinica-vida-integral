@@ -317,6 +317,9 @@ public class ImagenesService {
         List<String> faltan = new ArrayList<>();
         if (inf.getHallazgos() == null) faltan.add("los hallazgos");
         if (inf.getImpresion() == null) faltan.add("la impresión diagnóstica");
+        // La plantilla es una guía: firmarla sin completar dejaría un informe que no describe este estudio
+        String plantilla = limpio(e.getTipoEstudio().getPlantillaHallazgos());
+        if (plantilla != null && plantilla.equals(inf.getHallazgos())) faltan.add("completar los hallazgos (siguen iguales a la plantilla)");
         if (e.getImagenes().isEmpty() && e.getStudyInstanceUid() == null) faltan.add("las imágenes del estudio");
         if (r.hayCritico() && limpio(r.criticoReceptor()) == null) faltan.add("a quién se comunicó el hallazgo crítico");
         if (!faltan.isEmpty()) {

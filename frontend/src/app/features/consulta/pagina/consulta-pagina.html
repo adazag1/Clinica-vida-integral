@@ -108,6 +108,10 @@
       </section>
 
       <section class="tarjeta">
+        <app-ordenes-diagnosticas [pacienteId]="c.paciente.id" [consultaId]="c.id" [editable]="esMedico()" />
+      </section>
+
+      <section class="tarjeta">
         <app-ordenes-enfermeria [pacienteId]="c.paciente.id" [consultaId]="c.id" [editable]="esMedico()" [puedeSuspender]="esMedico()" />
       </section>
 

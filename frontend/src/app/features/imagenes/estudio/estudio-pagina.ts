@@ -83,15 +83,20 @@ export class EstudioPagina {
   }
 
   private mostrar(e: Estudio): void {
+    const anterior = this.estudio();
+    // Marcar una imagen clave, asignar o pedir segunda lectura recargan el estudio: no borrar lo que se está escribiendo
+    const mismoInforme = anterior?.resumen.id === e.resumen.id && anterior.resumen.estado === e.resumen.estado
+      && anterior.borrador?.version === e.borrador?.version;
     this.estudio.set(e);
     this.error.set(null);
+    this.uid = e.studyInstanceUid ?? '';
+    if (mismoInforme) return;
     const fuente = e.borrador ?? (e.resumen.estado === 'ADQUIRIDO' ? null : e.vigente);
     this.informe = {
       hallazgos: fuente?.hallazgos ?? e.plantilla.hallazgos ?? '',
       impresion: fuente?.impresion ?? e.plantilla.impresion ?? '',
       recomendaciones: fuente?.recomendaciones ?? e.plantilla.recomendaciones ?? '',
     };
-    this.uid = e.studyInstanceUid ?? '';
   }
 
   protected abrirEstudio(id: number): void {

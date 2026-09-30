@@ -317,7 +317,8 @@ public class PatologiaService {
                 if (c.getRetencionHasta() == null || !hoy.isAfter(c.getRetencionHasta())) {
                     throw new ReglaNegocioException("RETENCION_VIGENTE", c.getRetencionHasta() == null
                             ? "El caso aún no tiene informe: el material se conserva."
-                            : "El material debe conservarse hasta el " + c.getRetencionHasta() + ".");
+                            : "El material debe conservarse hasta el "
+                            + c.getRetencionHasta().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")) + ".");
                 }
             }
         }

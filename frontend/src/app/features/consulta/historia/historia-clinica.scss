@@ -187,3 +187,16 @@ td.critico {
   font-size: 13.5px;
   border: 0 !important;
 }
+
+.acciones-doc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.aviso-doc {
+  margin: 0 0 10px;
+  color: var(--c-primario-hover);
+  font-size: 13px;
+}
+

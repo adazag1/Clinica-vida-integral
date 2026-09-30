@@ -149,6 +149,42 @@ Con el perfil `local` se crean 4 profesionales de prueba; el usuario `medico` es
 - Signos críticos registrados sin consulta abierta avisan a los médicos. El laboratorio avisa a enfermería
   para tomar la muestra y cuando hay que repetirla.
 
+## Imágenes diagnósticas, patología y gestión documental (Fase 7)
+
+**Imágenes diagnósticas** (usuarios `radiologia` y `radiologia2`):
+- El médico ordena el estudio desde la consulta (motivo y diagnóstico presuntivo). La **lista de trabajo** pone
+  primero los urgentes y los que exceden el tiempo objetivo de su tipo de estudio (configurable).
+- Pantalla del mockup: estudios del paciente (actual y previos), **visor** (zoom, desplazamiento, brillo/contraste,
+  rotación, espejo, pantalla completa, miniaturas, imágenes clave) e **informe** precargado con la plantilla del estudio.
+- Firmar exige contraseña; un **hallazgo crítico** exige registrar a quién se comunicó y cuándo. Una plantilla sin
+  completar no se firma. Corregir un informe firmado abre una **versión nueva** con motivo; la firmada se conserva.
+- **Segunda lectura** a otro radiólogo con concordancia estructurada; **bloqueo** de estudios con errores de
+  identificación (avisa a admisiones y al médico); **métricas** de tiempo de respuesta por tipo de estudio.
+- Imágenes JPG, PNG o DICOM (el tipo se valida por el contenido, no por la extensión). *El navegador muestra JPG y
+  PNG; los DICOM se ven en el visor del PACS. No hay un PACS conectado: se guarda el StudyInstanceUID y, al configurar
+  `PACS_VISOR_URL` (p. ej. OHIF sobre Orthanc), aparece el botón «Abrir en el PACS».*
+
+**Patología** (usuario `patologia`):
+- Número de caso único que nunca se reutiliza (`B26-000001`: biopsia, `C…` citología, `Q…` pieza quirúrgica). Los
+  **intraoperatorios** tienen cola aparte y avisan de inmediato.
+- Recepción con **control de identificación**: el documento del rótulo debe coincidir con el paciente; si no, la
+  muestra no entra y queda registrado. Macroscopía y microscopía en **campos estructurados** según plantillas por
+  tipo de estudio, personalizables por servicio sin programar.
+- Validar exige contraseña y guarda una **versión inmutable** con autor, fecha y huella; una corrección exige motivo.
+- **Cadena de custodia** de bloques, láminas y piezas (archivo, préstamo, devolución); el descarte solo se permite
+  cumplida la retención.
+
+**Gestión documental** (usuario `archivo`; también médicos, enfermería, auditoría y admisiones según el tipo):
+- Registro de documentos digitales (PDF, JPG, PNG) o físicos con metadatos, **versiones** con motivo y huella,
+  **búsqueda avanzada**, **ubicación física** (sala, estantería, sección, caja) y ciclo de vida (activo, archivado,
+  en custodia, eliminado según la retención). Toda consulta o descarga queda registrada.
+- Las consultas firmadas, los resultados de laboratorio y los informes de imágenes y patología se registran solos
+  en la historia del paciente. **Solicitudes al archivo** (urgentes primero) y **reportes** de volumen, accesos y tiempos.
+- Admisiones solo ve y carga documentos administrativos (consentimientos, identidad, autorizaciones).
+- *Retención de 15 años (Resolución 839 de 2017) en `app.documentos.retencion-anos` y `app.patologia.retencion-anos`:
+  deben validarla el comité de historias clínicas y el área jurídica. Los archivos se guardan en PostgreSQL (máx.
+  10 MB c/u) y entran en su respaldo; para volúmenes grandes conviene moverlos a Azure Blob Storage.*
+
 ## Despliegue en Azure
 
 | | Dirección |
@@ -199,7 +235,7 @@ Azure la vuelve a encender sola a los 7 días. Para borrar todo: `az group delet
 - [x] **Fase 4** — Consulta médica e historia clínica (RFMT-002, 003, 007 a 012)
 - [x] **Fase 5** — Órdenes, laboratorio y notificaciones (RFLC-002 a 015, RFMT-004 a 006)
 - [x] **Fase 6** — Enfermería (RFENF-002 a 010)
-- [ ] Fase 7 — Radiología, patología y gestión documental
+- [x] **Fase 7** — Imágenes diagnósticas, patología y gestión documental (RFRAD, RFPAT, RFGAC)
 - [ ] Fase 8 — Facturación y auditoría clínica
 - [ ] Fase 9 — Motor de IA (reglas + Azure OpenAI)
 - [ ] Fase 10 — Dashboards CEO/CFO y despliegue final en Azure

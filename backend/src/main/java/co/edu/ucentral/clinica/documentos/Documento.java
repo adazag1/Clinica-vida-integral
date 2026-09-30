@@ -181,7 +181,7 @@ public class Documento extends EntidadAuditable {
         }
         if (nuevo == Estado.ELIMINADO && !hoy.isAfter(retencionHasta)) {
             throw new ReglaNegocioException("RETENCION_VIGENTE", "El documento debe conservarse hasta el "
-                    + retencionHasta + " según la política de retención.");
+                    + retencionHasta.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")) + " según la política de retención.");
         }
         if (nuevo == Estado.EN_CUSTODIA && !tieneUbicacion()) {
             throw new ReglaNegocioException("SIN_UBICACION", "Registre la ubicación física (sala y estantería) antes de ponerlo en custodia.");

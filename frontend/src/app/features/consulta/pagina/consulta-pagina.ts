@@ -9,6 +9,7 @@ import { Subject, debounceTime, distinctUntilChanged, switchMap, catchError, of 
 import { codigoError, mensajeError } from '../../../core/api/api';
 import { AuthService } from '../../../core/auth/auth.service';
 import { OrdenesConsulta } from '../componentes/ordenes-consulta';
+import { OrdenesDiagnosticas } from '../componentes/ordenes-diagnosticas';
 import { OrdenesEnfermeria } from '../componentes/ordenes-enfermeria';
 import { ResumenClinicoPanel } from '../componentes/resumen-clinico';
 import { TarjetasSignos } from '../componentes/tarjetas-signos';
@@ -29,7 +30,7 @@ import { ConsultaService } from '../consulta.service';
 /** Pantalla "Consulta Medicina General" del mockup (RFMT-002, 003, 007, 010, 011). */
 @Component({
   selector: 'app-consulta-pagina',
-  imports: [DatePipe, FormsModule, RouterLink, ResumenClinicoPanel, TarjetasSignos, OrdenesConsulta, OrdenesEnfermeria],
+  imports: [DatePipe, FormsModule, RouterLink, ResumenClinicoPanel, TarjetasSignos, OrdenesConsulta, OrdenesEnfermeria, OrdenesDiagnosticas],
   templateUrl: './consulta-pagina.html',
   styleUrl: './consulta-pagina.scss',
 })

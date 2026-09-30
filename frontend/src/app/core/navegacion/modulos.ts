@@ -86,7 +86,7 @@ export const MODULOS: Modulo[] = [
     titulo: 'Gestión documental',
     icono: 'folder_open',
     descripcion: 'Documentos clínicos, versiones y archivo',
-    roles: ['ARCHIVO'],
+    roles: ['ARCHIVO', 'AUDITORIA', 'ADMISIONES'],
   },
   {
     ruta: 'reportes',

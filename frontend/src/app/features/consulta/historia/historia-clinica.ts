@@ -6,6 +6,9 @@ import { RouterLink } from '@angular/router';
 
 import { mensajeError } from '../../../core/api/api';
 import { AuthService } from '../../../core/auth/auth.service';
+import { DialogoCarga } from '../../documentos/componentes/dialogo-carga';
+import { DocumentoResumen } from '../../documentos/documentos.models';
+import { DocumentosService } from '../../documentos/documentos.service';
 import { ResumenClinicoPanel } from '../componentes/resumen-clinico';
 import { Antecedente, ConsultaHistorial, ResumenClinico, Signos, TIPOS_ANTECEDENTE, TipoAntecedente } from '../consulta.models';
 import { ConsultaService } from '../consulta.service';
@@ -13,13 +16,14 @@ import { ConsultaService } from '../consulta.service';
 /** RFMT-009: consulta integral del historial clínico del paciente. */
 @Component({
   selector: 'app-historia-clinica',
-  imports: [DatePipe, DecimalPipe, FormsModule, RouterLink, ResumenClinicoPanel],
+  imports: [DatePipe, DecimalPipe, FormsModule, RouterLink, ResumenClinicoPanel, DialogoCarga],
   templateUrl: './historia-clinica.html',
   styleUrl: './historia-clinica.scss',
 })
 export class HistoriaClinica implements OnInit {
   private readonly service = inject(ConsultaService);
   private readonly auth = inject(AuthService);
+  private readonly documentosService = inject(DocumentosService);
 
   readonly pacienteId = input.required<string>();
 
@@ -30,6 +34,12 @@ export class HistoriaClinica implements OnInit {
   protected readonly error = signal<string | null>(null);
   protected readonly verInactivos = signal(false);
   protected readonly tipos = TIPOS_ANTECEDENTE;
+
+  protected readonly documentos = signal<DocumentoResumen[]>([]);
+  protected readonly cargandoDocumento = signal(false);
+  protected readonly avisoDocumentos = signal<string | null>(null);
+  protected readonly puedeCargarDocumento = computed(() => this.auth.tieneRol('MEDICO', 'ENFERMERIA'));
+  protected readonly puedeSolicitar = computed(() => this.auth.tieneRol('MEDICO', 'ENFERMERIA', 'AUDITORIA'));
 
   protected readonly puedeRegistrar = computed(() => ['MEDICO', 'ENFERMERIA'].includes(this.auth.usuario()?.rol ?? ''));
   protected readonly visibles = computed(() => this.antecedentes().filter((a) => this.verInactivos() || a.activo));
@@ -52,6 +62,23 @@ export class HistoriaClinica implements OnInit {
     this.service.historial(id).subscribe({ next: (c) => this.consultas.set(c) });
     this.service.antecedentes(id).subscribe({ next: (a) => this.antecedentes.set(a) });
     this.service.signos(id).subscribe({ next: (s) => this.signos.set(s) });
+    this.documentosService.dePaciente(id).subscribe({ next: (d) => this.documentos.set(d), error: () => undefined });
+  }
+
+  protected documentoRegistrado(): void {
+    this.cargandoDocumento.set(false);
+    this.avisoDocumentos.set('Documento registrado.');
+    this.cargar();
+  }
+
+  /** RFGAC-008: el expediente físico completo se pide al archivo clínico. */
+  protected solicitarExpediente(): void {
+    const motivo = window.prompt('¿Para qué necesita el expediente físico?');
+    if (!motivo?.trim()) return;
+    this.documentosService.solicitar({ pacienteId: +this.pacienteId(), documentoId: null, motivo: motivo.trim(), urgente: false }).subscribe({
+      next: () => this.avisoDocumentos.set('Solicitud enviada al archivo. Le avisaremos cuando esté disponible.'),
+      error: (e: HttpErrorResponse) => this.avisoDocumentos.set(mensajeError(e, 'No fue posible enviar la solicitud.')),
+    });
   }
 
   protected agregar(): void {
