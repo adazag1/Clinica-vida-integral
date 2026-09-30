@@ -90,6 +90,7 @@ public class HistoriaService {
     public List<DiagnosticoDto> buscarDiagnosticos(String texto) {
         String t = Normalizador.texto(texto);
         return diagnosticos.findAllByOrderByCodigo().stream()
+                .filter(Diagnostico::isActivo)
                 .filter(d -> t.isEmpty() || Normalizador.texto(d.getCodigo() + " " + d.getNombre()).contains(t)
                         || d.getCodigo().toLowerCase().startsWith(t.replace(" ", ".")))
                 .limit(MAX_BUSQUEDA).map(DiagnosticoDto::de).toList();

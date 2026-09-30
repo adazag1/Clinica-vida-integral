@@ -9,6 +9,7 @@ import co.edu.ucentral.clinica.comun.excepciones.ReglaNegocioException;
 import co.edu.ucentral.clinica.comun.seguridad.Reautenticador;
 import co.edu.ucentral.clinica.documentos.DocumentoGenerado;
 import co.edu.ucentral.clinica.documentos.TipoDocumento;
+import co.edu.ucentral.clinica.facturacion.ServicioPrestado;
 import co.edu.ucentral.clinica.historia.Antecedente;
 import co.edu.ucentral.clinica.historia.AntecedenteRepository;
 import co.edu.ucentral.clinica.historia.Consulta;
@@ -341,6 +342,12 @@ public class ImagenesService {
         publicador.publishEvent(new DocumentoGenerado(e.getPacienteId(), null, TipoDocumento.INFORME_RADIOLOGIA,
                 e.getTipoEstudio().getNombre() + " · " + e.getNumero(), "Imágenes diagnósticas", inf.getAutorNombre(),
                 "IMAGENES", String.valueOf(e.getId()), enlace(e), LocalDate.now(calendario.getZona()), inf.getMotivoCambio()));
+        if (primeraVez) {
+            // RFRC-002: el estudio se cobra una vez, con el informe firmado como soporte (las enmiendas no generan cargo)
+            publicador.publishEvent(new ServicioPrestado(e.getPacienteId(), e.getConsultaId(), null, "IMG:" + e.getTipoEstudio().getCodigo(),
+                    1, "IMAGENES", String.valueOf(e.getId()), "Informe " + e.getNumero() + " firmado por " + inf.getAutorNombre()
+                    + " (orden de " + e.getMedicoNombre() + ")", enlace(e), inf.getFirmadoEn()));
+        }
         return armar(e);
     }
 

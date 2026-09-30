@@ -75,6 +75,13 @@ export const MODULOS: Modulo[] = [
     roles: ['FACTURACION'],
   },
   {
+    ruta: 'facturacion/cartera',
+    titulo: 'Cartera',
+    icono: 'account_balance_wallet',
+    descripcion: 'Cartera por edades y por aseguradora',
+    roles: ['DIRECTIVO'],
+  },
+  {
     ruta: 'auditoria-clinica',
     titulo: 'Auditoría clínica',
     icono: 'fact_check',

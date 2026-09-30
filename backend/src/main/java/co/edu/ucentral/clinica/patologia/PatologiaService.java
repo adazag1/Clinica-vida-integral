@@ -7,6 +7,7 @@ import co.edu.ucentral.clinica.comun.excepciones.ReglaNegocioException;
 import co.edu.ucentral.clinica.comun.seguridad.Reautenticador;
 import co.edu.ucentral.clinica.documentos.DocumentoGenerado;
 import co.edu.ucentral.clinica.documentos.TipoDocumento;
+import co.edu.ucentral.clinica.facturacion.ServicioPrestado;
 import co.edu.ucentral.clinica.historia.Antecedente;
 import co.edu.ucentral.clinica.historia.AntecedenteRepository;
 import co.edu.ucentral.clinica.historia.Consulta;
@@ -284,6 +285,12 @@ public class PatologiaService {
         publicador.publishEvent(new DocumentoGenerado(c.getPacienteId(), null, TipoDocumento.INFORME_PATOLOGIA,
                 c.getTipo().getDescripcion() + " · " + c.getSitioAnatomico() + " · " + c.getNumero(), "Patología", nombreDe(yo),
                 "PATOLOGIA", String.valueOf(c.getId()), enlace(c), hoy, version > 1 ? motivo : null));
+        if (version == 1) {
+            // RFRC-002: el estudio se cobra al validar la primera versión; las correcciones no generan cargo
+            publicador.publishEvent(new ServicioPrestado(c.getPacienteId(), c.getConsultaId(), null, "PAT:" + c.getTipo().name(), 1,
+                    "PATOLOGIA", String.valueOf(c.getId()), "Informe " + c.getNumero() + " validado por " + nombreDe(yo)
+                    + " (solicitud de " + c.getMedicoNombre() + ")", enlace(c), c.getValidadoEn()));
+        }
         return armar(c);
     }
 

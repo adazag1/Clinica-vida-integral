@@ -31,8 +31,8 @@ import java.util.List;
 public class PacienteController {
 
     /** Quienes atienden o programan al paciente pueden consultarlo; solo admisiones lo registra. */
-    /** Archivo y auditoría buscan pacientes para ubicar y revisar su documentación. */
-    static final String LECTURA = "hasAnyRole('ADMIN','ADMISIONES','MEDICO','ENFERMERIA','AGENDAMIENTO','ARCHIVO','AUDITORIA')";
+    /** Archivo, auditoría y facturación buscan pacientes para su documentación y sus cuentas. */
+    static final String LECTURA = "hasAnyRole('ADMIN','ADMISIONES','MEDICO','ENFERMERIA','AGENDAMIENTO','ARCHIVO','AUDITORIA','FACTURACION')";
     static final String ESCRITURA = "hasAnyRole('ADMIN','ADMISIONES')";
 
     private final PacienteService service;

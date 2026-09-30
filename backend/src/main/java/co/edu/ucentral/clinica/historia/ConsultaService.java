@@ -4,6 +4,7 @@ import co.edu.ucentral.clinica.admisiones.Episodio;
 import co.edu.ucentral.clinica.admisiones.EpisodioRepository;
 import co.edu.ucentral.clinica.admisiones.EstadoEpisodio;
 import co.edu.ucentral.clinica.admisiones.NivelTriage;
+import co.edu.ucentral.clinica.admisiones.TipoAtencion;
 import co.edu.ucentral.clinica.admisiones.Triage;
 import co.edu.ucentral.clinica.admisiones.TriageRepository;
 import co.edu.ucentral.clinica.agenda.CalculadoraDisponibilidad;
@@ -31,6 +32,7 @@ import org.springframework.data.domain.AuditorAware;
 import co.edu.ucentral.clinica.comun.seguridad.Reautenticador;
 import co.edu.ucentral.clinica.documentos.DocumentoGenerado;
 import co.edu.ucentral.clinica.documentos.TipoDocumento;
+import co.edu.ucentral.clinica.facturacion.ServicioPrestado;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -306,6 +308,12 @@ public class ConsultaService {
         publicador.publishEvent(new DocumentoGenerado(c.getPacienteId(), c.getEpisodioId(), TipoDocumento.HISTORIA_CLINICA,
                 "Consulta médica · " + c.getMedicoNombre(), "Consulta médica", c.getMedicoNombre(), "CONSULTA",
                 String.valueOf(c.getId()), "/consulta/" + c.getId(), LocalDate.now(calendario.getZona()), null));
+        // RFRC-002: la consulta firmada genera su cargo
+        boolean urgencias = c.getEpisodioId() != null && episodios.findById(c.getEpisodioId())
+                .map(e -> e.getTipoAtencion() == TipoAtencion.URGENCIAS).orElse(false);
+        publicador.publishEvent(new ServicioPrestado(c.getPacienteId(), c.getId(), c.getEpisodioId(),
+                urgencias ? "CONSULTA:URGENCIAS" : "CONSULTA:GENERAL", 1, "CONSULTA", String.valueOf(c.getId()),
+                "Consulta firmada por " + c.getMedicoNombre(), "/consulta/" + c.getId(), c.getFirmadaEn()));
 
         if (c.getEpisodioId() != null) {
             episodios.findById(c.getEpisodioId()).ifPresent(Episodio::cerrar);

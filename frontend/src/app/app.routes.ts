@@ -7,8 +7,6 @@ import { EnConstruccion } from './features/en-construccion/en-construccion';
 
 /** Fase en la que se construye cada módulo pendiente (ver README). */
 const FASES: Record<string, string> = {
-  facturacion: 'Fase 8',
-  'auditoria-clinica': 'Fase 8',
   reportes: 'Fase 10',
 };
 
@@ -241,6 +239,61 @@ export const routes: Routes = [
             path: ':id',
             loadComponent: () =>
               import('./features/documentos/detalle/detalle-documento').then((m) => m.DetalleDocumento),
+          },
+        ],
+      },
+      {
+        path: 'facturacion',
+        children: [
+          {
+            path: '',
+            canActivate: [rolGuard],
+            data: { roles: ['FACTURACION', 'AUDITORIA'] },
+            loadComponent: () => import('./features/facturacion/cuentas/cuentas-lista').then((m) => m.CuentasLista),
+          },
+          {
+            path: 'cartera',
+            canActivate: [rolGuard],
+            data: { roles: ['FACTURACION', 'DIRECTIVO'] },
+            loadComponent: () => import('./features/facturacion/cartera/cartera').then((m) => m.Cartera),
+          },
+          {
+            path: 'contratos',
+            canActivate: [rolGuard],
+            data: { roles: ['FACTURACION', 'AUDITORIA', 'DIRECTIVO'] },
+            loadComponent: () => import('./features/facturacion/contratos/contratos').then((m) => m.Contratos),
+          },
+          {
+            path: 'cuentas/:id',
+            canActivate: [rolGuard],
+            data: { roles: ['FACTURACION', 'AUDITORIA', 'DIRECTIVO'] },
+            loadComponent: () => import('./features/facturacion/cuenta/cuenta-detalle').then((m) => m.CuentaDetalle),
+          },
+        ],
+      },
+      {
+        path: 'auditoria-clinica',
+        canActivate: [rolGuard],
+        data: { roles: ['AUDITORIA'] },
+        children: [
+          {
+            path: '',
+            loadComponent: () => import('./features/auditoria-clinica/cola/cola-auditoria').then((m) => m.ColaAuditoria),
+          },
+          {
+            path: 'tablero',
+            loadComponent: () =>
+              import('./features/auditoria-clinica/tablero/tablero-auditoria').then((m) => m.TableroAuditoria),
+          },
+          {
+            path: 'catalogo',
+            loadComponent: () =>
+              import('./features/auditoria-clinica/catalogo/catalogo-diagnosticos').then((m) => m.CatalogoDiagnosticos),
+          },
+          {
+            path: 'cuentas/:id',
+            loadComponent: () =>
+              import('./features/auditoria-clinica/expediente/expediente-auditoria').then((m) => m.ExpedienteAuditoria),
           },
         ],
       },

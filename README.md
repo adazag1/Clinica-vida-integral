@@ -185,6 +185,37 @@ Con el perfil `local` se crean 4 profesionales de prueba; el usuario `medico` es
   deben validarla el comité de historias clínicas y el área jurídica. Los archivos se guardan en PostgreSQL (máx.
   10 MB c/u) y entran en su respaldo; para volúmenes grandes conviene moverlos a Azure Blob Storage.*
 
+## Facturación y auditoría clínica (Fase 8)
+
+**Facturación** (usuario `facturacion`):
+- **Cargos automáticos**: la consulta firmada, cada examen validado, el informe de imágenes o patología firmado y cada
+  dosis administrada generan su cargo, con el documento clínico como soporte. Se generan *después* de confirmar el acto
+  clínico: un problema de facturación nunca impide firmar o administrar (si falla, facturación recibe el aviso).
+- **Contratos** por aseguradora: por evento (factor sobre la tarifa base) o capitación; reglas por servicio (tarifa
+  pactada, exclusión a cargo del paciente, tope de cantidad, autorización obligatoria), paquetes y tope por cuenta.
+  Hay contratos de prueba con Nueva EPS, Sanitas (con paquete de dolor torácico), Compensar (cápita) y Particular.
+- **Simulación** antes de facturar: exactamente lo que se emitiría, con advertencias y bloqueos. No se factura sin
+  soporte clínico, sin autorización cuando se exige (salvo urgencias) ni dos veces el mismo cargo. Los cargos se
+  anulan con motivo, nunca se borran.
+- Ciclo de la cuenta: abierta → auditoría (o devuelta) → auditada → facturada → glosada → pagada → cerrada, con
+  historial completo. **Glosas** con concepto y código del Manual Único de Glosas y plazo de respuesta de 15 días
+  hábiles; **pagos**; **cartera** por edades con alertas a los 30, 60 y 90 días de mora.
+- *Factura electrónica*: se genera el XML UBL 2.1 y el CUFE (SHA-384), pero queda **SIMULADA**: emitir ante la DIAN
+  requiere contratar un proveedor tecnológico, la resolución de numeración, el certificado de firma digital de la
+  clínica y el anexo de RIPS del sector salud. La integración queda lista en `ProveedorFacturaElectronica`.
+
+**Auditoría clínica** (usuario `auditoria`):
+- **Expediente** completo de la atención en una pantalla: notas médicas, órdenes y resultados, imágenes, patología,
+  documentos, consentimientos y cargos, con una **lista de verificación** (soporte de cada cargo, notas firmadas,
+  autorización, codificación).
+- **Codificación CIE-10** con sugerencias a partir del texto clínico y la evidencia encontrada; el auditor confirma.
+  Cambiar un código exige motivo y queda en el historial.
+- **Aprobar** o **devolver** con motivo a facturación, al médico o a admisiones; se mide el tiempo de corrección.
+  Quien registró cargos manuales en una cuenta no puede aprobarla.
+- **Indicadores**: tasa de devolución, tiempos de corrección, historias sin firmar, cargos sin soporte y glosas por
+  causa clínica. **Catálogo CIE-10 con versiones**: agregar, renombrar o inactivar un código sube la versión.
+- *Las tarifas, contratos y códigos CUPS son valores de prueba: los define el área financiera de la clínica.*
+
 ## Despliegue en Azure
 
 | | Dirección |
@@ -236,6 +267,6 @@ Azure la vuelve a encender sola a los 7 días. Para borrar todo: `az group delet
 - [x] **Fase 5** — Órdenes, laboratorio y notificaciones (RFLC-002 a 015, RFMT-004 a 006)
 - [x] **Fase 6** — Enfermería (RFENF-002 a 010)
 - [x] **Fase 7** — Imágenes diagnósticas, patología y gestión documental (RFRAD, RFPAT, RFGAC)
-- [ ] Fase 8 — Facturación y auditoría clínica
+- [x] **Fase 8** — Facturación y auditoría clínica (RFRC-002 a 014, RFAU-002 a 009)
 - [ ] Fase 9 — Motor de IA (reglas + Azure OpenAI)
 - [ ] Fase 10 — Dashboards CEO/CFO y despliegue final en Azure

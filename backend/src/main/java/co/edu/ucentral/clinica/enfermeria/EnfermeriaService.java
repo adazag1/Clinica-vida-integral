@@ -43,7 +43,9 @@ import co.edu.ucentral.clinica.seguridad.Rol;
 import co.edu.ucentral.clinica.seguridad.Usuario;
 import co.edu.ucentral.clinica.seguridad.UsuarioRepository;
 import org.springframework.data.domain.AuditorAware;
+import co.edu.ucentral.clinica.facturacion.ServicioPrestado;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -110,6 +112,7 @@ public class EnfermeriaService {
     private final AuthenticationManager authenticationManager;
     private final CalculadoraDisponibilidad calendario;
     private final AuditorAware<String> auditor;
+    private final ApplicationEventPublisher publicador;
     private final int maxIntentos;
 
     public EnfermeriaService(OrdenClinicaRepository ordenes, EjecucionOrdenRepository ejecuciones,
@@ -120,9 +123,10 @@ public class EnfermeriaService {
                              HistoriaService historia, LaboratorioService laboratorio,
                              ValidadorAlergias validadorAlergias, NotificacionService notificaciones,
                              AuthenticationManager authenticationManager, CalculadoraDisponibilidad calendario,
-                             AuditorAware<String> auditor,
+                             AuditorAware<String> auditor, ApplicationEventPublisher publicador,
                              @Value("${app.seguridad.max-intentos-fallidos}") int maxIntentos) {
         this.maxIntentos = maxIntentos;
+        this.publicador = publicador;
         this.ordenes = ordenes;
         this.ejecuciones = ejecuciones;
         this.eventos = eventos;
@@ -301,8 +305,14 @@ public class EnfermeriaService {
             }
         }
         String usuario = usuario();
-        ejecuciones.save(new EjecucionOrden(o.getId(), r.programadaPara(), res, limpio(r.motivo()),
+        EjecucionOrden ejecucion = ejecuciones.save(new EjecucionOrden(o.getId(), r.programadaPara(), res, limpio(r.motivo()),
                 realizada && tarde ? limpio(r.justificacionRetraso()) : null, verificaciones, segundo, usuario));
+        if (esMedicamento && realizada) {
+            // RFRC-002: la dosis administrada genera el cargo del medicamento, con el registro como soporte
+            publicador.publishEvent(new ServicioPrestado(paciente.getId(), o.getConsultaId(), null, "MED:" + o.getMedicamento().getId(),
+                    1, "ENFERMERIA", "ejecucion-" + ejecucion.getId(), "Orden de " + o.getMedicoNombre() + "; administrada por "
+                    + usuario + (segundo == null ? "" : ", verificó " + segundo), enlace(paciente.getId()), ejecucion.getRealizadaEn()));
+        }
         if (esMedicamento && !realizada) {
             notificaciones.paraUsuario(o.getMedico(), "Dosis no administrada · " + paciente.getNombreCompleto(),
                     o.getDescripcion() + " de las " + HORA.format(r.programadaPara().atZone(calendario.getZona())) + ": "

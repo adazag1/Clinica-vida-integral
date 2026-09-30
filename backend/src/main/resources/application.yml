@@ -74,3 +74,17 @@ app:
     retencion-anos: 15
   patologia:
     retencion-anos: 15
+  # RFRC-009: datos del facturador. Son valores de prueba: los reales vienen de la resolución de
+  # facturación de la DIAN y del proveedor tecnológico que contrate la clínica.
+  facturacion:
+    nit: ${FACTURACION_NIT:900000000}
+    razon-social: ${FACTURACION_RAZON_SOCIAL:Clínica Vida Integral (pruebas)}
+    prefijo: ${FACTURACION_PREFIJO:FEV}
+    clave-tecnica: ${FACTURACION_CLAVE_TECNICA:clave-tecnica-de-pruebas}
+    # 1 = producción, 2 = pruebas (habilitación DIAN)
+    ambiente: ${FACTURACION_AMBIENTE:2}
+    # Días hábiles que tiene la clínica para responder una glosa (Ley 1438 de 2011, art. 57)
+    dias-respuesta-glosa: 15
+  cartera:
+    # RFRC-010: antigüedad (días desde el vencimiento) que dispara una alerta
+    umbrales-dias: 30,60,90

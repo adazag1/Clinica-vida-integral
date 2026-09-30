@@ -1,0 +1,206 @@
+<a class="volver" routerLink="/auditoria-clinica"><span class="icono">arrow_back</span> Cuentas por auditar</a>
+
+@if (error()) { <div class="alerta alerta--error" role="alert"><span class="icono">error</span>{{ error() }}</div> }
+@if (aviso()) { <div class="alerta alerta--exito" role="status"><span class="icono">check_circle</span>{{ aviso() }}</div> }
+
+@if (expediente(); as e) {
+  <section class="tarjeta encabezado">
+    <div>
+      <span class="numero">{{ e.cuenta.resumen.numero }}</span>
+      <h2>{{ e.cuenta.resumen.paciente.nombreCompleto }}</h2>
+      <p>{{ e.cuenta.resumen.paciente.tipoDocumento }} {{ e.cuenta.resumen.paciente.numeroDocumento }}
+        {{ e.cuenta.resumen.paciente.edad !== null ? ' · ' + e.cuenta.resumen.paciente.edad + ' años' : '' }} · {{ e.cuenta.resumen.aseguradora }}</p>
+      <p>{{ e.episodio }}</p>
+    </div>
+    <span class="chip" [class]="'chip ' + clase(e.cuenta.resumen.estado)">{{ e.cuenta.resumen.estadoDescripcion }}</span>
+  </section>
+
+  <div class="rejilla">
+    <div class="principal">
+      <nav class="pestanas">
+        <button type="button" [class.activa]="seccion() === 'consultas'" (click)="seccion.set('consultas')">Notas médicas ({{ e.consultas.length }})</button>
+        <button type="button" [class.activa]="seccion() === 'ordenes'" (click)="seccion.set('ordenes')">Órdenes y resultados ({{ e.laboratorio.length + e.imagenes.length + e.patologia.length }})</button>
+        <button type="button" [class.activa]="seccion() === 'documentos'" (click)="seccion.set('documentos')">Documentos y consentimientos ({{ e.documentos.length + e.consentimientos.length }})</button>
+      </nav>
+
+      @switch (seccion()) {
+        @case ('consultas') {
+          @for (c of e.consultas; track c.id) {
+            <section class="tarjeta nota">
+              <div class="titulo-accion">
+                <div><strong>Consulta {{ c.inicio | date: 'dd/MM/yyyy h:mm a' }}</strong> · {{ c.medicoNombre }}</div>
+                <span class="chip" [class]="'chip ' + (c.estado === 'FIRMADA' ? 'chip--normal' : 'chip--critico')">{{ c.estado === 'FIRMADA' ? 'Firmada' : 'Sin firmar' }}</span>
+              </div>
+              <dl>
+                <dt>Motivo</dt><dd>{{ c.motivoConsulta ?? '—' }}</dd>
+                <dt>Enfermedad actual</dt><dd>{{ c.enfermedadActual ?? '—' }}</dd>
+                <dt>Examen físico</dt><dd>{{ c.examenFisico ?? '—' }}</dd>
+                <dt>Diagnósticos</dt><dd>@for (d of c.diagnosticos; track d.diagnosticoId) { <span class="dx">{{ d.codigo }} {{ d.nombre }}{{ d.principal ? ' (principal)' : '' }}</span> }</dd>
+                <dt>Plan</dt><dd>{{ c.plan ?? '—' }}</dd>
+                @if (c.prescripciones.length) {
+                  <dt>Fórmula</dt><dd>@for (p of c.prescripciones; track p.id) { {{ p.medicamento }} {{ p.dosis }} {{ p.frecuencia.toLowerCase() }}; }</dd>
+                }
+              </dl>
+              @if (c.firmadaEn) { <small>Firmada el {{ c.firmadaEn | date: 'dd/MM/yyyy h:mm a' }} · huella {{ c.firmaHash?.slice(0, 12) }}…</small> }
+            </section>
+          } @empty {
+            <p class="vacio tarjeta">La atención no tiene notas médicas.</p>
+          }
+        }
+        @case ('ordenes') {
+          <section class="tarjeta">
+            <div class="tarjeta__titulo"><span class="icono">science</span>Laboratorio</div>
+            @for (o of e.laboratorio; track o.id) {
+              <a class="fila" [routerLink]="['/laboratorio/ordenes', o.id]">{{ o.numero }} · {{ o.examenes.join(', ') }} <small>{{ o.medicoNombre }} · {{ o.estadoDescripcion }}</small></a>
+            } @empty { <p class="vacio">Sin órdenes de laboratorio.</p> }
+            <div class="tarjeta__titulo sub"><span class="icono">radiology</span>Imágenes</div>
+            @for (x of e.imagenes; track x.id) {
+              <a class="fila" [routerLink]="['/imagenes/estudios', x.id]">{{ x.numero }} · {{ x.estudio }} <small>{{ x.medicoNombre }} · {{ x.estadoDescripcion }}</small>
+                @if (x.impresion) { <br /><small class="texto">{{ x.impresion }}</small> }</a>
+            } @empty { <p class="vacio">Sin estudios.</p> }
+            <div class="tarjeta__titulo sub"><span class="icono">biotech</span>Patología</div>
+            @for (x of e.patologia; track x.id) {
+              <a class="fila" [routerLink]="['/patologia/casos', x.id]">{{ x.numero }} · {{ x.tipoDescripcion }} {{ x.sitioAnatomico }} <small>{{ x.estadoDescripcion }}</small>
+                @if (x.diagnostico) { <br /><small class="texto">{{ x.diagnostico }}</small> }</a>
+            } @empty { <p class="vacio">Sin casos de patología.</p> }
+          </section>
+        }
+        @case ('documentos') {
+          <section class="tarjeta">
+            <div class="tarjeta__titulo"><span class="icono">verified_user</span>Consentimientos</div>
+            @for (x of e.consentimientos; track x.id) {
+              <p class="fila">{{ x.tipoDescripcion }} · {{ x.aceptado ? 'aceptado' : 'NO aceptado' }} por {{ x.otorgadoPor }} <small>{{ x.registradoEn | date: 'dd/MM/yyyy h:mm a' }}</small></p>
+            } @empty { <p class="vacio">Sin consentimientos en el episodio.</p> }
+            <div class="tarjeta__titulo sub"><span class="icono">folder_open</span>Documentos</div>
+            @for (d of e.documentos; track d.id) {
+              <a class="fila" [routerLink]="['/documentos', d.id]">{{ d.titulo }} <small>{{ d.tipoDescripcion }} · {{ d.fechaDocumento | date: 'dd/MM/yyyy' }}</small></a>
+            } @empty { <p class="vacio">Sin documentos.</p> }
+          </section>
+        }
+      }
+
+      <section class="tarjeta">
+        <div class="tarjeta__titulo"><span class="icono">receipt</span>Cargos de la cuenta</div>
+        <table class="tabla">
+          <tbody>
+            @for (x of e.cuenta.cargos; track x.id) {
+              @if (x.estado === 'ACTIVO') {
+                <tr>
+                  <td>{{ x.servicioNombre }}<br /><small>{{ x.servicioCodigo }} · {{ x.origenModulo ? 'automático' : 'manual' }}</small></td>
+                  <td>{{ x.cantidad }}</td>
+                  <td class="der">{{ x.valorTotal | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</td>
+                  <td>@if (x.tieneSoporte) { <span class="ok"><span class="icono">check_circle</span>{{ x.soporte }}</span> }
+                    @else { <span class="mal"><span class="icono">error</span>Sin soporte</span> }</td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </section>
+    </div>
+
+    <aside class="lateral">
+      <section class="tarjeta">
+        <div class="tarjeta__titulo"><span class="icono">checklist</span>Verificación</div>
+        @for (v of e.verificacion; track v.punto) {
+          <div class="verificacion" [class.falla]="!v.cumple">
+            <span class="icono">{{ v.cumple ? 'check_circle' : 'cancel' }}</span>
+            <span><strong>{{ v.punto }}</strong><small>{{ v.detalle }}</small></span>
+          </div>
+        }
+      </section>
+
+      <section class="tarjeta">
+        <div class="tarjeta__titulo"><span class="icono">code</span>Codificación CIE-10</div>
+        @if (e.sugerencias.length && enAuditoria() && esAuditor()) {
+          <p class="ayuda">Sugerencias a partir de lo registrado (toque para usar; usted confirma):</p>
+          @for (s of e.sugerencias; track s.codigo) {
+            <button type="button" class="sugerencia" (click)="usar(s)" [title]="'Evidencia: ' + s.evidencia.join(', ')">
+              <strong>{{ s.codigo }}</strong> {{ s.nombre }}
+              <small>{{ s.registradoPorMedico ? 'Registrado por el médico' : 'Evidencia: ' + s.evidencia.join(', ') }}</small>
+            </button>
+          }
+        }
+        @if (enAuditoria() && esAuditor()) {
+          <div class="form-rejilla codigos">
+            <label class="ancho">Diagnóstico principal<input class="control" [(ngModel)]="principal" placeholder="p. ej. J18.9" /></label>
+            <div class="ancho etiqueta">Relacionados
+              <div class="chips">@for (r of relacionados; track r) { <span class="chip chip--info">{{ r }} <button type="button" (click)="quitarRelacionado(r)" aria-label="Quitar">×</button></span> }</div>
+              <div class="linea"><input class="control" [(ngModel)]="nuevoRelacionado" (keyup.enter)="agregarRelacionado()" placeholder="Código" />
+                <button type="button" class="btn btn--secundario btn--pequeno" (click)="agregarRelacionado()">Agregar</button></div>
+            </div>
+            @if (yaCodificada()) {
+              <label class="ancho">Motivo del cambio<input class="control" [(ngModel)]="motivoCodificacion" placeholder="Obligatorio si cambia un código ya asignado" /></label>
+            }
+          </div>
+          <div class="acciones"><button type="button" class="btn btn--primario btn--pequeno" (click)="guardarCodificacion()" [disabled]="!principal.trim() || ocupado()">Guardar codificación</button></div>
+        } @else if (e.codificacion.diagnosticoPrincipal) {
+          <p><strong>{{ e.codificacion.diagnosticoPrincipal }}</strong> {{ e.codificacion.nombrePrincipal }}</p>
+          @for (n of e.codificacion.nombresRelacionados; track $index) { <p class="rel">{{ e.codificacion.relacionados[$index] }} {{ n }}</p> }
+        } @else {
+          <p class="vacio">Sin codificar.</p>
+        }
+        @if (e.codificacion.historial.length) {
+          <details>
+            <summary>Historial de codificación ({{ e.codificacion.historial.length }})</summary>
+            <ul class="lista-eventos">
+              @for (h of e.codificacion.historial; track $index) {
+                <li><small>{{ h.fecha | date: 'dd/MM h:mm a' }} · {{ h.usuario }}</small><br />{{ h.campo }}: {{ h.anterior ?? '—' }} → {{ h.nuevo ?? '—' }}{{ h.motivo ? ' (' + h.motivo + ')' : '' }}</li>
+              }
+            </ul>
+          </details>
+        }
+      </section>
+
+      @if (enAuditoria() && esAuditor()) {
+        <section class="tarjeta decision">
+          <div class="tarjeta__titulo"><span class="icono">gavel</span>Decisión</div>
+          @if (e.cuenta.resumen.estado === 'DEVUELTA') {
+            <p class="ayuda">La cuenta está devuelta; espere a que vuelva corregida.</p>
+          } @else {
+            <button type="button" class="btn btn--primario" (click)="aprobar()" [disabled]="!aprobable() || ocupado()"
+              [title]="aprobable() ? '' : 'Falta cumplir la verificación'"><span class="icono">verified</span>Aprobar</button>
+            @if (!devolviendo()) {
+              <button type="button" class="btn btn--secundario" (click)="devolviendo.set(true)"><span class="icono">undo</span>Devolver</button>
+            } @else {
+              <div class="form-rejilla">
+                <label class="ancho">Motivo
+                  <select class="control" [ngModel]="devolucion.motivo" (ngModelChange)="elegirMotivo($event)">
+                    @for (m of motivos; track m.valor) { <option [value]="m.valor">{{ m.etiqueta }}</option> }
+                  </select></label>
+                <label class="ancho">Devolver a
+                  <select class="control" [(ngModel)]="devolucion.dirigidaA">
+                    @for (d of destinos; track d.valor) { <option [value]="d.valor">{{ d.etiqueta }}</option> }
+                  </select></label>
+                <label class="ancho">Qué debe corregirse<textarea class="control" rows="3" [(ngModel)]="devolucion.detalle"></textarea></label>
+              </div>
+              <div class="acciones">
+                <button type="button" class="btn btn--secundario btn--pequeno" (click)="devolviendo.set(false)">Cancelar</button>
+                <button type="button" class="btn btn--peligro btn--pequeno" (click)="devolver()" [disabled]="!devolucion.detalle.trim() || ocupado()">Devolver cuenta</button>
+              </div>
+            }
+          }
+        </section>
+      }
+
+      @if (e.devoluciones.length) {
+        <section class="tarjeta">
+          <div class="tarjeta__titulo"><span class="icono">undo</span>Devoluciones</div>
+          @for (d of e.devoluciones; track d.id) {
+            <div class="devolucion">
+              <strong>{{ d.motivoDescripcion }}</strong> → {{ d.dirigidaA.toLowerCase() }}
+              <p>{{ d.detalle }}</p>
+              <small>{{ d.devueltaEn | date: 'dd/MM h:mm a' }} · {{ d.devueltaPor }}</small>
+              @if (d.corregidaEn) {
+                <p class="corregida"><span class="icono">check</span>Corregida {{ d.corregidaEn | date: 'dd/MM h:mm a' }} por {{ d.corregidaPor }}
+                  ({{ d.horasCorreccion }} h){{ d.respuesta ? ': ' + d.respuesta : '' }}</p>
+              } @else {
+                <p class="mal">Pendiente de corrección</p>
+              }
+            </div>
+          }
+        </section>
+      }
+    </aside>
+  </div>
+}

@@ -1,0 +1,286 @@
+<a class="volver" routerLink="/facturacion"><span class="icono">arrow_back</span> Cuentas</a>
+
+@if (error()) { <div class="alerta alerta--error" role="alert"><span class="icono">error</span>{{ error() }}</div> }
+@if (aviso()) { <div class="alerta alerta--exito" role="status"><span class="icono">check_circle</span>{{ aviso() }}</div> }
+
+@if (cuenta(); as c) {
+  <section class="tarjeta encabezado">
+    <div>
+      <span class="numero">{{ c.resumen.numero }}</span>
+      <h2>{{ c.resumen.paciente.nombreCompleto }}</h2>
+      <p>{{ c.resumen.paciente.tipoDocumento }} {{ c.resumen.paciente.numeroDocumento }} · {{ c.resumen.aseguradora }} · {{ c.resumen.contrato }}
+        ({{ c.resumen.modalidad.toLowerCase() }})</p>
+      <p>{{ c.urgencia ? 'Urgencias' : 'Atención programada' }} · Autorización: <strong>{{ c.numeroAutorizacion ?? 'sin registrar' }}</strong>
+        @if (esFacturacion() && c.resumen.estado !== 'CERRADA' && !c.factura) {
+          <button type="button" class="enlace" (click)="abrir('autorizacion')">{{ c.numeroAutorizacion ? 'cambiar' : 'registrar' }}</button>
+        }
+      </p>
+    </div>
+    <span class="chip" [class]="'chip ' + clase(c.resumen.estado)">{{ c.resumen.estadoDescripcion }}</span>
+  </section>
+
+  <ol class="pasos">
+    @for (p of nombresPasos; track p; let i = $index) {
+      <li [class.hecho]="i < paso()" [class.actual]="i === paso()"><span class="punto">{{ i + 1 }}</span>{{ p }}</li>
+    }
+  </ol>
+
+  @if (panel() === 'autorizacion') {
+    <section class="tarjeta panel">
+      <div class="form-rejilla">
+        <label>Número de autorización<input class="control" [(ngModel)]="numeroAutorizacion" /></label>
+      </div>
+      <div class="acciones"><button type="button" class="btn btn--primario btn--pequeno" (click)="registrarAutorizacion()"
+        [disabled]="!numeroAutorizacion.trim() || ocupado()">Guardar</button></div>
+    </section>
+  }
+
+  <div class="rejilla">
+    <div class="principal">
+      <section class="tarjeta">
+        <div class="titulo-accion">
+          <div class="tarjeta__titulo"><span class="icono">receipt</span>Cargos</div>
+          <div class="botones">
+            @if (anulados()) {
+              <label class="check"><input type="checkbox" [ngModel]="verAnulados()" (ngModelChange)="verAnulados.set($event)" /> Ver anulados ({{ anulados() }})</label>
+            }
+            @if (esFacturacion() && editable()) {
+              <button type="button" class="btn btn--secundario btn--pequeno" (click)="abrir('cargo')"><span class="icono">add</span>Cargo manual</button>
+            }
+          </div>
+        </div>
+
+        @if (panel() === 'cargo') {
+          <div class="panel-interno">
+            <div class="form-rejilla">
+              <label class="ancho">Servicio
+                <input class="control" [(ngModel)]="textoCargo" placeholder="Buscar por código o nombre" />
+                <select class="control" [(ngModel)]="cargo.servicioId" size="5">
+                  @for (s of serviciosFiltrados(); track s.id) {
+                    <option [ngValue]="s.id">{{ s.codigo }} · {{ s.nombre }} · {{ s.tarifaBase | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}{{ s.requiereAutorizacion ? ' · exige autorización' : '' }}</option>
+                  }
+                </select></label>
+              <label>Cantidad<input class="control" type="number" min="1" [(ngModel)]="cargo.cantidad" /></label>
+              <label>Soporte clínico<input class="control" [(ngModel)]="cargo.soporte" placeholder="p. ej. Orden médica del 29/09" /></label>
+            </div>
+            <p class="ayuda">Sin soporte el cargo queda registrado, pero la cuenta no se podrá facturar hasta tenerlo.</p>
+            <div class="acciones"><button type="button" class="btn btn--primario btn--pequeno" (click)="agregarCargo()" [disabled]="!cargo.servicioId || ocupado()">Agregar</button></div>
+          </div>
+        }
+
+        <div class="tabla-contenedor">
+          <table class="tabla">
+            <thead><tr><th>Servicio</th><th>Cant.</th><th class="der">Valor</th><th>Soporte</th><th></th></tr></thead>
+            <tbody>
+              @for (x of cargosVisibles(); track x.id) {
+                <tr [class.anulado]="x.estado === 'ANULADO'">
+                  <td><strong>{{ x.servicioNombre }}</strong><br />
+                    <small>{{ x.servicioCodigo }} · {{ x.fechaServicio | date: 'dd/MM h:mm a' }} · {{ x.origenModulo ? 'automático (' + x.origenModulo.toLowerCase() + ')' : 'manual: ' + x.registradoPor }}</small>
+                    @if (x.aCargoPaciente) { <span class="chip chip--alerta">A cargo del paciente</span> }
+                    @if (x.cubiertoCapitacion) { <span class="chip chip--info">Cápita</span> }
+                    @if (x.requiereAutorizacion) { <span class="chip chip--info">Exige autorización</span> }
+                    @if (x.estado === 'ANULADO') { <br /><small class="mal">Anulado por {{ x.anuladoPor }}: {{ x.motivoAnulacion }}</small> }
+                  </td>
+                  <td>{{ x.cantidad }}</td>
+                  <td class="der">{{ x.valorTotal | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</td>
+                  <td>
+                    @if (x.tieneSoporte) {
+                      <span class="soporte" [title]="x.soporte ?? ''"><span class="icono ok">check_circle</span>{{ x.soporte }}</span>
+                      @if (x.soporteEnlace) { <a class="enlace" [routerLink]="x.soporteEnlace">ver</a> }
+                    } @else {
+                      <span class="soporte mal"><span class="icono">error</span>Sin soporte</span>
+                    }
+                  </td>
+                  <td class="nowrap">
+                    @if (esFacturacion() && editable() && x.estado === 'ACTIVO') {
+                      @if (!x.tieneSoporte) { <button type="button" class="enlace" (click)="editarCargo(x, 'soporte')">Soporte</button> · }
+                      <button type="button" class="enlace" (click)="editarCargo(x, 'anular')">Anular</button>
+                    }
+                  </td>
+                </tr>
+                @if (cargoEditando()?.id === x.id) {
+                  <tr class="fila-edicion"><td colspan="5">
+                    <div class="linea">
+                      <input class="control" [(ngModel)]="textoAccionCargo"
+                        [placeholder]="cargoEditando()?.accion === 'soporte' ? 'Orden, nota o registro que respalda el cargo' : 'Motivo de la anulación'" />
+                      <button type="button" class="btn btn--pequeno" [class]="'btn btn--pequeno ' + (cargoEditando()?.accion === 'anular' ? 'btn--peligro' : 'btn--primario')"
+                        (click)="confirmarCargo()" [disabled]="!textoAccionCargo.trim() || ocupado()">{{ cargoEditando()?.accion === 'anular' ? 'Anular' : 'Guardar' }}</button>
+                    </div>
+                  </td></tr>
+                }
+              } @empty {
+                <tr><td colspan="5" class="vacio">Sin cargos.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      @if (c.liquidacion; as l) {
+        <section class="tarjeta">
+          <div class="tarjeta__titulo"><span class="icono">calculate</span>Simulación de la factura
+            <span class="chip" [class]="'chip ' + (l.facturable ? 'chip--normal' : 'chip--critico')">{{ l.facturable ? 'Facturable' : 'Con pendientes' }}</span></div>
+          @if (l.bloqueos.length) {
+            <div class="alerta alerta--error"><span class="icono">block</span><div><strong>No se puede facturar:</strong>
+              <ul>@for (b of l.bloqueos; track $index) { <li>{{ b }}</li> }</ul></div></div>
+          }
+          @if (l.advertencias.length) {
+            <ul class="advertencias">@for (a of l.advertencias; track $index) { <li><span class="icono">info</span>{{ a }}</li> }</ul>
+          }
+          <table class="tabla">
+            <thead><tr><th>Código</th><th>Descripción</th><th>Cant.</th><th class="der">Unitario</th><th class="der">Total</th></tr></thead>
+            <tbody>
+              @for (x of l.lineas; track $index) {
+                <tr><td>{{ x.codigo }}</td><td>{{ x.descripcion }}@if (x.nota) { <br /><small>{{ x.nota }}</small> }</td><td>{{ x.cantidad }}</td>
+                  <td class="der">{{ x.valorUnitario | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</td><td class="der">{{ x.valorTotal | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</td></tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr><td colspan="4" class="der">Subtotal</td><td class="der">{{ l.subtotal | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</td></tr>
+              @if (l.ajustes) { <tr><td colspan="4" class="der">Ajuste por tope del contrato</td><td class="der">{{ l.ajustes | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</td></tr> }
+              <tr class="total"><td colspan="4" class="der">Total a la aseguradora</td><td class="der">{{ l.total | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</td></tr>
+              @if (l.valorPaciente) { <tr><td colspan="4" class="der">A cargo del paciente</td><td class="der">{{ l.valorPaciente | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</td></tr> }
+            </tfoot>
+          </table>
+        </section>
+      }
+
+      @if (c.factura; as f) {
+        <section class="tarjeta">
+          <div class="titulo-accion">
+            <div class="tarjeta__titulo"><span class="icono">description</span>Factura {{ f.numero }}
+              <span class="chip chip--alerta" title="No se transmitió a la DIAN: falta el proveedor tecnológico">{{ f.estadoDian === 'SIMULADA' ? 'Simulada (sin DIAN)' : f.estadoDian }}</span></div>
+            <button type="button" class="enlace" (click)="descargarXml()"><span class="icono">download</span>XML</button>
+          </div>
+          <dl class="datos-factura">
+            <div><dt>Emitida</dt><dd>{{ f.fechaEmision | date: 'dd/MM/yyyy h:mm a' }} · {{ f.emitidaPor }}</dd></div>
+            <div><dt>Vence</dt><dd>{{ f.fechaVencimiento | date: 'dd/MM/yyyy' }}</dd></div>
+            <div><dt>Total</dt><dd>{{ f.total | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</dd></div>
+            <div><dt>Saldo</dt><dd [class.mal]="f.saldo > 0">{{ f.saldo | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</dd></div>
+          </dl>
+          <p class="cufe" [title]="f.cufe">CUFE {{ f.cufe.slice(0, 32) }}…</p>
+          <table class="tabla">
+            <tbody>
+              @for (x of f.lineas; track x.orden) {
+                <tr><td>{{ x.codigo }}</td><td>{{ x.descripcion }}</td><td>{{ x.cantidad }}</td><td class="der">{{ x.valorTotal | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</td></tr>
+              }
+            </tbody>
+          </table>
+        </section>
+
+        <section class="tarjeta">
+          <div class="titulo-accion">
+            <div class="tarjeta__titulo"><span class="icono">report</span>Glosas y pagos</div>
+            @if (esFacturacion() && f.saldo > 0) {
+              <div class="botones">
+                <button type="button" class="btn btn--secundario btn--pequeno" (click)="abrir('glosa')">Registrar glosa</button>
+                <button type="button" class="btn btn--secundario btn--pequeno" (click)="abrir('pago')">Registrar pago</button>
+              </div>
+            }
+          </div>
+          @if (panel() === 'glosa') {
+            <div class="panel-interno">
+              <div class="form-rejilla">
+                <label>Concepto
+                  <select class="control" [(ngModel)]="glosa.concepto">
+                    @for (x of conceptos; track x.valor) { <option [value]="x.valor">{{ x.etiqueta }}</option> }
+                  </select></label>
+                <label>Código (3 dígitos)<input class="control" [(ngModel)]="glosa.codigo" maxlength="3" placeholder="p. ej. 301" /></label>
+                <label>Valor glosado<input class="control" type="number" [(ngModel)]="glosa.valor" /></label>
+                <label>Recibida<input class="control" type="date" [(ngModel)]="glosa.recibidaEn" [max]="hoy()" /></label>
+                <label>Cargo (opcional)
+                  <select class="control" [(ngModel)]="glosa.cargoId">
+                    <option [ngValue]="null">Toda la factura</option>
+                    @for (x of c.cargos; track x.id) { @if (x.estado === 'ACTIVO') { <option [ngValue]="x.id">{{ x.servicioNombre }}</option> } }
+                  </select></label>
+                <label class="ancho">Descripción<input class="control" [(ngModel)]="glosa.descripcion" /></label>
+              </div>
+              <div class="acciones"><button type="button" class="btn btn--primario btn--pequeno" (click)="registrarGlosa()"
+                [disabled]="!glosa.codigo || !glosa.valor || !glosa.descripcion.trim() || ocupado()">Registrar glosa</button></div>
+            </div>
+          }
+          @if (panel() === 'pago') {
+            <div class="panel-interno">
+              <div class="form-rejilla">
+                <label>Valor<input class="control" type="number" [(ngModel)]="pago.valor" /></label>
+                <label>Fecha<input class="control" type="date" [(ngModel)]="pago.fecha" [max]="hoy()" /></label>
+                <label>Medio<select class="control" [(ngModel)]="pago.medio"><option>Transferencia</option><option>Consignación</option><option>Cheque</option><option>Compensación</option></select></label>
+                <label>Referencia<input class="control" [(ngModel)]="pago.referencia" /></label>
+              </div>
+              <div class="acciones"><button type="button" class="btn btn--primario btn--pequeno" (click)="registrarPago()" [disabled]="!pago.valor || ocupado()">Registrar pago</button></div>
+            </div>
+          }
+          @for (g of c.glosas; track g.id) {
+            <div class="glosa" [class.glosa--vencida]="g.vencida">
+              <div class="glosa__cabecera">
+                <strong>{{ g.codigo }} · {{ g.conceptoDescripcion }}</strong>
+                @if (g.causaClinica) { <span class="chip chip--info">Causa clínica</span> }
+                <span class="chip" [class]="'chip ' + (g.estado === 'RADICADA' ? (g.vencida ? 'chip--critico' : 'chip--alerta') : 'chip--normal')">{{ g.estadoDescripcion }}</span>
+                <span class="valor">{{ g.valor | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</span>
+              </div>
+              <p>{{ g.descripcion }}</p>
+              <small>Recibida {{ g.recibidaEn | date: 'dd/MM/yyyy' }} · responder antes del {{ g.limiteRespuesta | date: 'dd/MM/yyyy' }}{{ g.vencida ? ' (vencida)' : '' }}</small>
+              @if (g.respuesta) { <p class="respuesta"><strong>Respuesta:</strong> {{ g.respuesta }} · aceptado {{ g.valorAceptado | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</p> }
+              @if (g.estado === 'RADICADA' && esFacturacion()) {
+                @if (glosaRespondiendo() === g.id) {
+                  <div class="form-rejilla">
+                    <label>Valor que se acepta<input class="control" type="number" min="0" [max]="g.valor" [(ngModel)]="respuestaGlosa.valorAceptado" /></label>
+                    <label class="ancho">Respuesta a la aseguradora<textarea class="control" rows="2" [(ngModel)]="respuestaGlosa.respuesta"></textarea></label>
+                  </div>
+                  <div class="acciones"><button type="button" class="btn btn--primario btn--pequeno" (click)="confirmarRespuesta(g)"
+                    [disabled]="!respuestaGlosa.respuesta.trim() || ocupado()">Registrar respuesta</button></div>
+                } @else {
+                  <button type="button" class="enlace" (click)="responder(g)">Responder</button>
+                }
+              }
+            </div>
+          }
+          @for (p of c.pagos; track p.id) {
+            <p class="pago"><span class="icono">payments</span>{{ p.fecha | date: 'dd/MM/yyyy' }} · {{ p.medio }}{{ p.referencia ? ' · ' + p.referencia : '' }}
+              <strong>{{ p.valor | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</strong></p>
+          }
+          @if (!c.glosas.length && !c.pagos.length) { <p class="vacio">Sin glosas ni pagos.</p> }
+        </section>
+      }
+    </div>
+
+    <aside class="lateral">
+      @if (esFacturacion()) {
+        <section class="tarjeta acciones-cuenta">
+          <div class="tarjeta__titulo"><span class="icono">task_alt</span>Siguiente paso</div>
+          @switch (c.resumen.estado) {
+            @case ('ABIERTA') {
+              <p>Revise la simulación y envíe la cuenta a auditoría clínica.</p>
+              <button type="button" class="btn btn--primario" (click)="enviarAAuditoria()" [disabled]="ocupado()">Enviar a auditoría</button>
+            }
+            @case ('DEVUELTA') {
+              <p class="mal">Auditoría la devolvió. Corrija lo indicado y reenvíela explicando qué cambió.</p>
+              <textarea class="control" rows="3" [(ngModel)]="respuestaDevolucion" placeholder="Qué se corrigió"></textarea>
+              <button type="button" class="btn btn--primario" (click)="enviarAAuditoria()" [disabled]="!respuestaDevolucion.trim() || ocupado()">Reenviar a auditoría</button>
+            }
+            @case ('EN_AUDITORIA') { <p>En revisión por auditoría clínica.</p> }
+            @case ('AUDITADA') {
+              <p>Aprobada por auditoría. Revise la simulación y emita la factura.</p>
+              <button type="button" class="btn btn--primario" (click)="facturar()" [disabled]="ocupado() || !c.liquidacion?.facturable">Emitir factura</button>
+            }
+            @case ('PAGADA') {
+              <p>Pagada. Cierre la cuenta para terminar el ciclo.</p>
+              <button type="button" class="btn btn--primario" (click)="cerrar()" [disabled]="ocupado() || glosasPendientes() > 0">Cerrar cuenta</button>
+            }
+            @case ('CERRADA') { <p>Ciclo terminado.</p> }
+            @default { <p>Registre las glosas y los pagos a medida que lleguen.</p> }
+          }
+        </section>
+      }
+
+      <section class="tarjeta">
+        <div class="tarjeta__titulo"><span class="icono">history</span>Trazabilidad</div>
+        <ul class="lista-eventos">
+          @for (ev of c.eventos; track $index) {
+            <li><small>{{ ev.fecha | date: 'dd/MM h:mm a' }} · {{ ev.usuario }}</small><br /><strong>{{ ev.accion }}</strong>{{ ev.detalle ? ': ' + ev.detalle : '' }}</li>
+          }
+        </ul>
+      </section>
+    </aside>
+  </div>
+}

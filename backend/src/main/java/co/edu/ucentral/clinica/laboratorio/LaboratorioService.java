@@ -39,6 +39,7 @@ import co.edu.ucentral.clinica.seguridad.Usuario;
 import co.edu.ucentral.clinica.seguridad.UsuarioRepository;
 import co.edu.ucentral.clinica.documentos.DocumentoGenerado;
 import co.edu.ucentral.clinica.documentos.TipoDocumento;
+import co.edu.ucentral.clinica.facturacion.ServicioPrestado;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.data.domain.PageRequest;
@@ -352,6 +353,12 @@ public class LaboratorioService {
                 o.getExamenes().stream().map(e -> e.getExamen().getNombre()).collect(Collectors.joining(", ")) + " · " + o.getNumero(),
                 "Laboratorio clínico", nombreDe(o.getValidadaPor()), "LABORATORIO", String.valueOf(o.getId()), enlace,
                 LocalDate.now(calendario.getZona()), null));
+        // RFRC-002: cada examen validado genera su cargo, con la orden como soporte
+        for (OrdenExamen oe : o.getExamenes()) {
+            publicador.publishEvent(new ServicioPrestado(p.getId(), o.getConsultaId(), null, "LAB:" + oe.getExamen().getCodigo(), 1,
+                    "LABORATORIO", o.getId() + "-" + oe.getId(), "Orden " + o.getNumero() + " de " + o.getMedicoNombre() + ", validada",
+                    enlace, o.getValidadaEn()));
+        }
         return armar(o);
     }
 
