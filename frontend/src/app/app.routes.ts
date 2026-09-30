@@ -298,6 +298,12 @@ export const routes: Routes = [
         ],
       },
       {
+        path: 'ia',
+        canActivate: [rolGuard],
+        data: { roles: rolesDe('ia') },
+        loadComponent: () => import('./features/ia/motor/motor-ia').then((m) => m.MotorIa),
+      },
+      {
         path: 'historia/:pacienteId',
         canActivate: [rolGuard],
         data: { roles: HISTORIA },

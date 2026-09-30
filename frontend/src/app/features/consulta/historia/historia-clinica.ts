@@ -7,6 +7,7 @@ import { RouterLink } from '@angular/router';
 import { mensajeError } from '../../../core/api/api';
 import { AuthService } from '../../../core/auth/auth.service';
 import { DialogoCarga } from '../../documentos/componentes/dialogo-carga';
+import { AlertasIaPanel } from '../../ia/componentes/alertas-ia';
 import { DocumentoResumen } from '../../documentos/documentos.models';
 import { DocumentosService } from '../../documentos/documentos.service';
 import { ResumenClinicoPanel } from '../componentes/resumen-clinico';
@@ -16,7 +17,7 @@ import { ConsultaService } from '../consulta.service';
 /** RFMT-009: consulta integral del historial clínico del paciente. */
 @Component({
   selector: 'app-historia-clinica',
-  imports: [DatePipe, DecimalPipe, FormsModule, RouterLink, ResumenClinicoPanel, DialogoCarga],
+  imports: [DatePipe, DecimalPipe, FormsModule, RouterLink, ResumenClinicoPanel, DialogoCarga, AlertasIaPanel],
   templateUrl: './historia-clinica.html',
   styleUrl: './historia-clinica.scss',
 })
@@ -41,6 +42,8 @@ export class HistoriaClinica implements OnInit {
   protected readonly puedeCargarDocumento = computed(() => this.auth.tieneRol('MEDICO', 'ENFERMERIA'));
   protected readonly puedeSolicitar = computed(() => this.auth.tieneRol('MEDICO', 'ENFERMERIA', 'AUDITORIA'));
 
+  /** Las alertas de IA son para quien atiende al paciente (el backend aplica la misma regla). */
+  protected readonly verIa = computed(() => this.auth.tieneRol('MEDICO', 'ENFERMERIA'));
   protected readonly puedeRegistrar = computed(() => ['MEDICO', 'ENFERMERIA'].includes(this.auth.usuario()?.rol ?? ''));
   protected readonly visibles = computed(() => this.antecedentes().filter((a) => this.verInactivos() || a.activo));
 

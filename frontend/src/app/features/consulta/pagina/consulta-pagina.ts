@@ -8,6 +8,7 @@ import { Subject, debounceTime, distinctUntilChanged, switchMap, catchError, of 
 
 import { codigoError, mensajeError } from '../../../core/api/api';
 import { AuthService } from '../../../core/auth/auth.service';
+import { AlertasIaPanel } from '../../ia/componentes/alertas-ia';
 import { OrdenesConsulta } from '../componentes/ordenes-consulta';
 import { OrdenesDiagnosticas } from '../componentes/ordenes-diagnosticas';
 import { OrdenesEnfermeria } from '../componentes/ordenes-enfermeria';
@@ -30,7 +31,8 @@ import { ConsultaService } from '../consulta.service';
 /** Pantalla "Consulta Medicina General" del mockup (RFMT-002, 003, 007, 010, 011). */
 @Component({
   selector: 'app-consulta-pagina',
-  imports: [DatePipe, FormsModule, RouterLink, ResumenClinicoPanel, TarjetasSignos, OrdenesConsulta, OrdenesEnfermeria, OrdenesDiagnosticas],
+  imports: [DatePipe, FormsModule, RouterLink, ResumenClinicoPanel, TarjetasSignos, OrdenesConsulta, OrdenesEnfermeria, OrdenesDiagnosticas,
+    AlertasIaPanel],
   templateUrl: './consulta-pagina.html',
   styleUrl: './consulta-pagina.scss',
 })
@@ -47,6 +49,8 @@ export class ConsultaPagina implements OnInit {
   protected readonly aviso = signal<string | null>(null);
   protected readonly guardando = signal(false);
   protected readonly sinGuardar = signal(false);
+  /** Sube con cada dato nuevo (signos, firma) para que el panel de IA se reevalúe. */
+  protected readonly versionIa = signal(0);
 
   /** Notas editables (se guardan con "Guardar" o antes de firmar). */
   protected notas = { motivoConsulta: '', enfermedadActual: '', examenFisico: '', plan: '' };
@@ -229,6 +233,7 @@ export class ConsultaPagina implements OnInit {
         this.password = '';
         this.aplicar(firmada, true);
         this.aviso.set('Consulta firmada y finalizada.');
+        this.versionIa.update((v) => v + 1);
         this.cargarResumen(firmada.paciente.id);
       },
       error: (e: HttpErrorResponse) => {
@@ -321,6 +326,7 @@ export class ConsultaPagina implements OnInit {
       next: () => {
         this.editandoSignos.set(false);
         this.nuevosSignos = this.signosVacios();
+        this.versionIa.update((v) => v + 1);
         this.service.obtener(c.id).subscribe((actual) => this.aplicar(actual, false));
         this.cargarResumen(c.paciente.id);
       },

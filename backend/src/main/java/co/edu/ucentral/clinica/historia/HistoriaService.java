@@ -28,6 +28,7 @@ import co.edu.ucentral.clinica.pacientes.Paciente;
 import co.edu.ucentral.clinica.pacientes.PacienteService;
 import co.edu.ucentral.clinica.pacientes.dto.PacienteResumenDto;
 import co.edu.ucentral.clinica.seguridad.Rol;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -63,13 +64,15 @@ public class HistoriaService {
     private final NotificacionService notificaciones;
     private final LaboratorioService laboratorio;
     private final AuditorAware<String> auditor;
+    private final ApplicationEventPublisher publicador;
 
     public HistoriaService(PacienteService pacienteService, AntecedenteRepository antecedentes,
                            RegistroSignosRepository signos, ConsultaRepository consultas,
                            DiagnosticoRepository diagnosticos, MedicamentoRepository medicamentos,
                            EpisodioRepository episodios, TriageRepository triages, EvaluadorSignos evaluador,
                            NotificacionService notificaciones, LaboratorioService laboratorio,
-                           AuditorAware<String> auditor) {
+                           AuditorAware<String> auditor, ApplicationEventPublisher publicador) {
+        this.publicador = publicador;
         this.laboratorio = laboratorio;
         this.pacienteService = pacienteService;
         this.antecedentes = antecedentes;
@@ -173,6 +176,7 @@ public class HistoriaService {
                 notificaciones.paraRol(Rol.MEDICO, "Signos vitales críticos", detalle, "/enfermeria/pacientes/" + pacienteId);
             }
         }
+        publicador.publishEvent(new DatosPacienteActualizados(pacienteId, "SIGNOS"));
         return SignosDto.de(s, alertas);
     }
 

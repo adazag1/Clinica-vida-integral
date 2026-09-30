@@ -96,6 +96,13 @@ export const MODULOS: Modulo[] = [
     roles: ['ARCHIVO', 'AUDITORIA', 'ADMISIONES'],
   },
   {
+    ruta: 'ia',
+    titulo: 'Motor de IA',
+    icono: 'neurology',
+    descripcion: 'Reglas clínicas, precisión de las alertas, asistente y dataset anonimizado',
+    roles: ['DIRECTIVO', 'MEDICO'],
+  },
+  {
     ruta: 'reportes',
     titulo: 'Indicadores',
     icono: 'monitoring',

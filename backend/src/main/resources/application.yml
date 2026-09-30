@@ -88,3 +88,21 @@ app:
   cartera:
     # RFRC-010: antigüedad (días desde el vencimiento) que dispara una alerta
     umbrales-dias: 30,60,90
+  # Épica 4: motor de IA. Las reglas clínicas corren siempre dentro del sistema; el asistente de
+  # lenguaje (Azure OpenAI) queda apagado hasta que la clínica apruebe el costo y el tratamiento de datos.
+  ia:
+    llm:
+      habilitado: ${IA_LLM_HABILITADO:false}
+      # https://<recurso>.openai.azure.com
+      endpoint: ${AZURE_OPENAI_ENDPOINT:}
+      deployment: ${AZURE_OPENAI_DEPLOYMENT:}
+      api-key: ${AZURE_OPENAI_API_KEY:}
+      api-version: ${AZURE_OPENAI_API_VERSION:2024-10-21}
+      # Precio en USD por 1.000 tokens, para estimar el costo de cada consulta (depende del modelo)
+      precio-entrada-1k: ${AZURE_OPENAI_PRECIO_ENTRADA:0.00015}
+      precio-salida-1k: ${AZURE_OPENAI_PRECIO_SALIDA:0.0006}
+      max-tokens: 700
+      timeout-segundos: 40
+    dataset:
+      # Sal del seudónimo del paciente en el dataset exportado. Vacía = se deriva de la llave JWT.
+      sal: ${IA_DATASET_SAL:}

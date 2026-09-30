@@ -216,6 +216,32 @@ Con el perfil `local` se crean 4 profesionales de prueba; el usuario `medico` es
   causa clínica. **Catálogo CIE-10 con versiones**: agregar, renombrar o inactivar un código sube la versión.
 - *Las tarifas, contratos y códigos CUPS son valores de prueba: los define el área financiera de la clínica.*
 
+## Motor de IA (Fase 9)
+
+**Alertas clínicas por reglas** (en la consulta y la historia clínica; médico y enfermería):
+- 9 reglas basadas en escalas y guías publicadas, cada una con su referencia: riesgo de sepsis (qSOFA / SIRS), lesión
+  renal aguda (KDIGO), metformina con TFG baja (CKD-EPI 2021), potasio alterado con fármacos que lo empeoran, troponina
+  elevada con o sin dolor torácico, crisis hipertensiva, glucosa alterada con insulina, caída de hemoglobina y hallazgo
+  crítico sin nota médica posterior.
+- Cada alerta muestra severidad, puntaje y escala, **la evidencia concreta** (valor y hace cuánto) y una recomendación.
+  Se reevalúan solas al llegar signos, resultados, informes, dosis o una nota firmada, y al abrir la historia. No se
+  duplican; si la regla deja de cumplirse se cierran, pero se conservan. Una alerta crítica avisa al médico.
+- El médico califica cada alerta como **útil / no útil** (con motivo). Con eso, la página **Motor de IA** muestra la
+  precisión por regla y los comentarios, y el administrador puede activar o desactivar reglas.
+- *Los umbrales deben validarlos el comité médico y el Líder Científico. No es un modelo entrenado: son reglas
+  explicables; un modelo propio requiere datos reales y validación clínica.*
+
+**Asistente de lenguaje (Azure OpenAI) — apagado**: resumen de la historia y diagnóstico diferencial. Está construido
+pero se enciende solo cuando la clínica apruebe el costo y el tratamiento de datos (`IA_LLM_HABILITADO=true` y
+`AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_DEPLOYMENT`, `AZURE_OPENAI_API_KEY`). Antes de enviar, el texto se anonimiza
+(sin nombre, documento, teléfono, correo, dirección ni fechas exactas; edad en grupos de 5 años); el médico puede ver
+exactamente qué se enviaría. Cada uso queda registrado con usuario, tokens y costo estimado, y nunca escribe en la historia.
+
+**Dataset anonimizado** (directivo o administrador): CSV con diagnósticos, laboratorio, signos, imágenes y patología;
+cada paciente con un seudónimo (HMAC con sal secreta `IA_DATASET_SAL`), sexo, grupo de edad y día relativo. La
+descarga queda auditada. *Antes de compartirlo fuera de la clínica debe aprobarlo el oficial de protección de datos
+(Ley 1581 de 2012).*
+
 ## Despliegue en Azure
 
 | | Dirección |
@@ -268,5 +294,5 @@ Azure la vuelve a encender sola a los 7 días. Para borrar todo: `az group delet
 - [x] **Fase 6** — Enfermería (RFENF-002 a 010)
 - [x] **Fase 7** — Imágenes diagnósticas, patología y gestión documental (RFRAD, RFPAT, RFGAC)
 - [x] **Fase 8** — Facturación y auditoría clínica (RFRC-002 a 014, RFAU-002 a 009)
-- [ ] Fase 9 — Motor de IA (reglas + Azure OpenAI)
+- [x] **Fase 9** — Motor de IA: reglas clínicas con retroalimentación, asistente Azure OpenAI (apagado) y dataset anonimizado
 - [ ] Fase 10 — Dashboards CEO/CFO y despliegue final en Azure

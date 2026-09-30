@@ -63,6 +63,12 @@
     </section>
   </div>
 
+  @if (verIa()) {
+    <section class="tarjeta">
+      <app-alertas-ia [pacienteId]="r.paciente.id" />
+    </section>
+  }
+
   <section class="tarjeta">
     <div class="tarjeta__titulo"><span class="icono">timeline</span>Consultas</div>
     <ol class="linea-tiempo">

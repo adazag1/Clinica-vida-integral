@@ -153,6 +153,10 @@
       </section>
 
       <section class="tarjeta">
+        <app-alertas-ia [pacienteId]="c.paciente.id" [version]="versionIa()" />
+      </section>
+
+      <section class="tarjeta">
         <div class="titulo-accion">
           <div class="tarjeta__titulo"><span class="icono">clinical_notes</span>Resumen clínico</div>
           @if (editable() && !agregandoAntecedente()) {
